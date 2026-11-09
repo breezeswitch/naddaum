@@ -278,6 +278,11 @@ img.crop,.pet-opt img,.lineup img,.modal img,.book-cover img,.empty img,#obPetIm
 #petPreview img{border-radius:12px}
 #talk .stage .friend img{object-position:50% 94%;transform-origin:50% 86%}
 @media (max-height:700px){#talk .stage .friend img{object-position:50% 80%}#talk .stage .line{max-height:96px}}
+/* 첫 화면: 두 버튼 한 줄, 화면 안에 다 보이게 */
+.home-actions .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.home-actions .pair .btn{padding:16px 8px;font-size:16.5px;white-space:nowrap}
+#home .stage{height:clamp(210px,calc(100dvh - 296px),470px)}
+#home .grow{margin:12px 2px 4px}
 </style>
 </head>
 <body>
@@ -302,7 +307,7 @@ img.crop,.pet-opt img,.lineup img,.modal img,.book-cover img,.empty img,#obPetIm
         <div class="eyebrow">왜 만들었을까요</div>
         <h1>"나는 뭘 좋아하지?"<br>이 질문에 멈칫한 적 있나요</h1>
         <p>엄마로, 직장인으로, 누군가의 딸로 열심히 살다 보면 정작 나에게 묻는 일은 가장 뒤로 밀려나요.</p>
-        <p>나다움은 거창한 검사가 아니라, 나에게 다정하게 질문하고 솔직하게 답해 본 시간이 쌓일 때 선명해집니다. 라이프 디자인 브랜드 브리즈가 그 시간을 누구나 가볍게 시작할 수 있도록 이 앱을 만들었어요.</p>
+        <p>나다움은 나에게 다정하게 질문하고 솔직하게 답해 본 시간이 쌓일 때 선명해집니다. 라이프 디자인 브랜드 브리즈가 그 시간을 누구나 가볍게 시작할 수 있도록 이 앱을 만들었어요.</p>
       </div>
 
       <div class="slide" data-i="2">
@@ -417,10 +422,9 @@ img.crop,.pet-opt img,.lineup img,.modal img,.book-cover img,.empty img,#obPetIm
       <div class="tiny" id="stageLabel" style="margin-top:4px"></div>
     </div>
     <div class="home-actions">
-      <button class="btn" id="talkBtn">이야기 나누기</button>
-      <div class="sub">
+      <div class="pair">
+        <button class="btn" id="talkBtn">이야기 나누기</button>
         <button class="btn soft" id="freeBtn">그냥 털어놓기</button>
-        <button class="btn soft" id="restBtn">오늘은 쉴래</button>
       </div>
     </div>
     <div class="card recent-clue" id="recentClue" style="display:none">
@@ -899,7 +903,6 @@ function renderHome() {
   if (next) { const span = next.min - STAGES[i].min; $('#growBar').style.width = `${Math.max(4, (p - STAGES[i].min) / span * 100)}%`; $('#stageNext').textContent = `다음 성장까지 이야기 ${next.min - p}개`; }
   else { $('#growBar').style.width = '100%'; $('#stageNext').textContent = `함께 쌓은 이야기 ${p}개`; }
   $('#talkBtn').textContent = doneToday() ? '질문 하나 더 받기' : '이야기 나누기';
-  $('#restBtn').textContent = restedToday() ? '오늘은 쉬는 중' : '오늘은 쉴래';
   const last = [...d.talks].reverse().find(t => t.clue);
   $('#recentClue').style.display = last ? 'block' : 'none';
   if (last) $('#recentClueText').textContent = last.clue;
@@ -910,11 +913,6 @@ $('#homePet').onclick = () => {
 };
 $('#talkBtn').onclick = () => { S.talk = null; $('#msgs').innerHTML = ''; go('talk'); };
 $('#freeBtn').onclick = () => { S.talk = null; $('#msgs').innerHTML = ''; S.nextKind = 'free'; go('talk'); };
-$('#restBtn').onclick = async () => {
-  if (!restedToday()) { const before = stageIdx(); S.data.rests.push(todayKey()); await save(); checkGrow(before); }
-  $('#bubbleText').textContent = pick([`쉬는 것도 너를 돌보는 일이야, ${call()}. 오늘은 아무것도 안 해도 돼.`, '오늘은 내가 옆에서 담요 덮어 줄게. 푹 쉬어.', '말 안 해도 괜찮아. 쉬어도 우리는 같이 자라.']);
-  $('#restBtn').textContent = '오늘은 쉬는 중';
-};
 function checkGrowModal(before) { const now = stageIdx(); if (now > before) modal(`<img src="${petThumb(now)}"><h3>${esc(petName())}${batchim(petName()) ? '이' : '가'} 자랐어요!</h3><p class="muted">"이제 나는 ${stageName(now)}야. 네가 너를 알아갈수록 나도 자라. 고마워, ${esc(call())}."</p><button class="btn" onclick="document.getElementById('modal').classList.remove('on')">꼭 안아 주기</button>`); $('#talkPetImg').src = petImg(); $('#talkSub').textContent = stageName(); }
 function checkGrow(before) {
   const now = stageIdx();
