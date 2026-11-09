@@ -283,6 +283,15 @@ img.crop,.pet-opt img,.lineup img,.modal img,.book-cover img,.empty img,#obPetIm
 .home-actions .pair .btn{padding:16px 8px;font-size:16.5px;white-space:nowrap}
 #home .stage{height:clamp(210px,calc(100dvh - 296px),470px)}
 #home .grow{margin:12px 2px 4px}
+/* 키보드가 올라와 화면이 낮아졌을 때: 메뉴를 숨기고 친구 그림을 줄여 질문과 입력창이 함께 보이게 */
+@media (max-height:520px){body.in-talk .nav{display:none!important}
+#talk.on{padding-bottom:0}
+#talk .stage{height:clamp(104px,30dvh,170px)}
+#talk .stage .line{display:none}
+#talk .stage .friend img{object-position:50% 70%}
+#talk .log{padding-top:6px}
+#talk .log-title{display:none}
+#talk .composer .end{margin-top:3px}}
 </style>
 </head>
 <body>
@@ -748,6 +757,7 @@ function go(id, fromPop) {
   if (cur === 'talk' && id !== 'talk' && S.talk) leaveTalk().then(() => { if (id === 'home') renderHome(); });
   if (!fromPop && ['home', 'talk', 'book', 'settings'].includes(id)) { try { (id === 'home' ? history.replaceState : history.pushState).call(history, { s: id }, '', '#' + id); } catch {} }
   $$('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+  document.body.classList.toggle('in-talk', id === 'talk');
   $('#nav').classList.toggle('on', ['home', 'talk', 'book'].includes(id));
   $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.go === id));
   window.scrollTo(0, 0);
@@ -755,6 +765,7 @@ function go(id, fromPop) {
   if (id === 'book') renderBook();
   if (id === 'settings') renderSettings();
   if (id === 'talk' && !S.talk) { const k = S.nextKind || 'daily'; S.nextKind = null; startTalk(k); }
+  else if (id === 'talk' && $('#composer').style.display !== 'none') focusAnswer();
 }
 function goBack() { if (history.state && history.state.s && history.state.s !== 'home') { try { history.back(); return; } catch {} } go('home'); }
 window.addEventListener('popstate', e => { if (!S.data) return; go((e.state && e.state.s) || 'home', true); });
@@ -946,6 +957,9 @@ async function petSay(text, cls) {
   fr.classList.remove('talking'); void fr.offsetWidth; fr.classList.add('talking');
   return addMsg('pet', text, cls);
 }
+// 키보드가 올라오면(화면 높이가 줄면) 대화 기록을 맨 아래로 내려 마지막 질문이 보이게
+(window.visualViewport || window).addEventListener('resize', () => { const l = document.querySelector('#talk .log'); if (l && document.body.classList.contains('in-talk')) l.scrollTop = l.scrollHeight; });
+function focusAnswer() { try { const a = $('#answer'); a.focus({ preventScroll: true }); } catch {} }
 function setComposer(on, ph) { $('#composer').style.display = on ? 'block' : 'none'; if (ph) $('#answer').placeholder = ph; }
 function setTalkTools() {
   const T = S.talk;
@@ -1008,7 +1022,7 @@ async function ask(body, tries = 1) {
 async function startTalk(kind, avoid) {
   if (S.busy) return;
   wakeServer();
-  S.busy = true; MSGS().innerHTML = ''; setComposer(false);
+  S.busy = true; MSGS().innerHTML = ''; setComposer(true); focusAnswer();
   $('#talkPetImg').src = petImg(); $('#talkPetName').textContent = petName(); $('#talkWho').textContent = petName(); $('#talkText').textContent = ''; $('#logTitle').textContent = '대화 기록';
   $('#talkSub').textContent = stageName();
   const d = S.data, num = d.talks.filter(t => t.done).length + 1;
