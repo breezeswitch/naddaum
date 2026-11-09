@@ -771,7 +771,7 @@ async function unlock() {
   try {
     const box = JSON.parse(store.get(STORE));
     const r = await openData(box, pw);
-    S.data = migrate(r.data); S.key = r.key; S.salt = r.salt;
+    S.data = migrate(r.data); S.key = r.key; S.salt = r.salt; wakeServer();
     $('#lock').classList.remove('on');
     go('home');
   } catch (e) {
@@ -842,7 +842,7 @@ $('#finishOb').onclick = async () => {
     v: 1, createdAt: new Date().toISOString(),
     profile: { pet: OB.pet, petName: $('#petName').value.trim(), nick: $('#nick').value.trim(), traits: OB.traits },
   });
-  await save();
+  await save(); wakeServer();
   $('#finishOb').disabled = false; $('#pw1').value = $('#pw2').value = '';
   go('home');
   setTimeout(() => modal(`<img src="${petImg(0)}"><h3>"${esc(petName())}! 내 이름이 생겼다!"</h3><p class="muted">"이제 우리 서로 알아가자, ${esc(call())}. 네가 너에 대해 하나씩 알려 주면, 나도 조금씩 자랄 거야."</p><button class="btn" id="mStart">첫 이야기 나누기</button>`, c => { $('#mStart', c).onclick = () => { closeModal(); go('talk'); }; }), 400);
@@ -912,7 +912,8 @@ function addMsg(who, text, cls = '') {
 function scrollLog() { const lg = $('#talk .log'); if (lg) requestAnimationFrame(() => { lg.scrollTop = lg.scrollHeight; }); }
 function thinking(on) {
   const line = $('#talkText');
-  if (on) line.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
+  clearTimeout(thinking._t);
+  if (on) { line.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>'; thinking._t = setTimeout(() => { const ty = $('#talkText .typing'); if (ty) ty.insertAdjacentHTML('afterend', '<span class="tiny" style="margin-left:8px">생각하는 중이야, 조금만 기다려 줘</span>'); }, 4000); }
   $('#sendBtn').disabled = on;
 }
 async function petSay(text, cls) {
@@ -963,13 +964,14 @@ function mood(t) { const p = POS_WORDS.filter(w => t.includes(w)).length, n = NE
 function friendProfile() { const p = S.data.profile; return { petName: p.petName, species: petInfo().name, stage: STAGES[stageIdx()].pre, nick: p.nick, call: call(), traits: p.traits }; }
 function memoryList() { return S.data.talks.filter(t => t.clue).slice(-14).map(t => t.clue); }
 function recentQuote() { const qs = S.data.talks.filter(t => t.done && t.mode !== 'free').slice(-5).flatMap(t => t.messages.filter(m => m.who === 'me').map(m => pickQuote(m.t))).filter(Boolean); return qs.length ? pick(qs) : ''; }
-async function ask(body, tries = 2) {
+function wakeServer() { try { fetch(API, { method: 'GET' }).catch(() => {}); } catch {} }
+async function ask(body, tries = 1) {
   let last;
   for (let i = 0; i < tries; i++) {
     try {
       const r = await Promise.race([
         fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile: friendProfile(), memory: memoryList(), kind: S.data.kindWords.slice(-3).map(k => k.t), ...body }) }),
-        sleep(30000).then(() => { throw new Error('timeout'); }),
+        sleep(body.mode === 'book' ? 65000 : 20000).then(() => { throw new Error('timeout'); }),
       ]);
       const j = await r.json();
       if (r.ok && j.text) return j.text.trim();
@@ -982,6 +984,7 @@ async function ask(body, tries = 2) {
 
 async function startTalk(kind, avoid) {
   if (S.busy) return;
+  wakeServer();
   S.busy = true; MSGS().innerHTML = ''; setComposer(false);
   $('#talkPetImg').src = petImg(); $('#talkPetName').textContent = petName(); $('#talkWho').textContent = petName(); $('#talkText').textContent = ''; $('#logTitle').textContent = '대화 기록';
   $('#talkSub').textContent = stageName();
@@ -1008,12 +1011,12 @@ async function startTalk(kind, avoid) {
   S.busy = false; setComposer(true, '편하게 이야기해 줘');
 }
 async function openQuestion(q, first) {
-  thinking(true);
-  let text;
-  try { text = await ask({ mode: 'open', question: q.q, why: q.why, quote: first ? '' : recentQuote() }); }
-  catch { text = `${first ? `${call()}, 우리 첫 이야기다! 정답은 없으니까 떠오르는 대로 말해 줘.\n\n` : ''}${q.q}\n\n${q.why}`; }
-  thinking(false);
-  await petSay(text);
+  // 첫마디는 기다리지 않도록 앱에서 바로 만든다. 지난번에 한 말을 기억해서 꺼낸다
+  const quote = first ? '' : recentQuote();
+  const intro = first ? `${call()}, 우리 첫 이야기다! 정답은 없으니까 떠오르는 대로 말해 줘.` :
+    quote ? `${call()}, 지난번에 "${quote}"라고 했던 말이 계속 마음에 남아 있었어.` :
+    pick([`${call()}, 왔구나! 오늘도 너한테 궁금한 게 생겼어.`, `${call()}, 오늘 하루는 어땠어? 하나 물어봐도 돼?`]);
+  await petSay(`${intro}\n\n${q.q}\n${q.why}`);
 }
 
 async function onSend() {
@@ -1170,7 +1173,7 @@ async function aiBook() {
   try {
     const d = S.data;
     const log = `처음 고른 키워드: ${d.profile.traits.join(', ')}\n\n` + d.talks.filter(t => t.done).map(t => `[${fmtDate(t.date)}] ${t.question ? 'Q: ' + t.question : '털어놓기'}\n` + t.messages.filter(m => m.who === 'me').map(m => `A: ${m.t}`).join('\n') + (t.clue ? `\n(본인이 남긴 문장: ${t.clue})` : '')).join('\n\n').slice(-28000);
-    const text = await ask({ mode: 'book', log }, 3);
+    const text = await ask({ mode: 'book', log }, 2);
     d.aiProfile = { text: text.replace(/\*\*|##?/g, ''), date: new Date().toISOString() };
     await save(); renderBook(); toast('설명서를 새로 썼어요');
   } catch (e) { toast('잠깐 연결이 안 됐어요. 조금 뒤에 다시 눌러 주세요'); b.disabled = false; b.textContent = '다시 시도'; }
