@@ -329,6 +329,20 @@ img.crop,.pet-opt img,.lineup img,.modal img,.book-cover img,.empty img,#obPetIm
 #modalCard{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent}
 #modalCard::-webkit-scrollbar{width:5px}#modalCard::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:5px}#modalCard::-webkit-scrollbar-track{background:transparent}
 .slide[data-i="4"] #introInstall{padding:13px;margin-bottom:12px}
+/* ===== 친구의 감정 반응 ===== */
+.stage .friend .fx-img{position:absolute;inset:0;opacity:0;transition:opacity .8s ease;pointer-events:none}
+.stage .friend .fx-img.snap{transition:opacity .07s linear}
+.stage .friend .fx-img.on{opacity:1}
+.stage .friend.r-hold img{animation:none!important}
+.stage .friend .fx-layer{position:absolute;inset:0;pointer-events:none;z-index:1;transition:background 1s ease}
+.stage .friend.r-sad .fx-layer{background:linear-gradient(180deg,rgba(70,90,150,.16),rgba(40,60,120,.30))}
+.stage .friend.r-glow .fx-layer{background:radial-gradient(45% 35% at 50% 70%,rgba(255,214,150,.22),rgba(255,214,150,0) 70%)}
+.fx-p{position:absolute;font-size:18px;opacity:0;animation:fxUp 1.9s ease-out forwards;will-change:transform,opacity}
+.fx-p.spark{color:#FFE2A8;text-shadow:0 0 10px rgba(255,210,140,.95)}
+.fx-p.heart{color:#FF9DB0;font-size:21px;text-shadow:0 0 10px rgba(255,150,170,.8)}
+.fx-p.bang{color:#FFE2A8;font-size:36px;font-weight:800;left:60%!important;top:28%!important;animation:fxPop .8s ease-out forwards;text-shadow:0 0 12px rgba(255,210,140,.9)}
+@keyframes fxUp{0%{opacity:0;transform:translateY(12px) scale(.6)}20%{opacity:1}100%{opacity:0;transform:translateY(-80px) scale(1.1)}}
+@keyframes fxPop{0%{opacity:0;transform:scale(.4)}30%{opacity:1;transform:scale(1.25)}100%{opacity:0;transform:scale(1)}}
 </style>
 </head>
 <body>
@@ -817,6 +831,31 @@ const IMG = (id, n) => { const k = `img/scene-${id}${n}.webp`; return (window.__
 const petImg = (i = stageIdx(), id = S.data.profile.pet) => IMG(id, i + 1);
 const THUMB = (id, n) => { const k = `img/thumb-${id}${n}.webp`; return (window.__IMG && window.__IMG[k]) || (window.__SCENE_URL ? window.__SCENE_URL + `thumb-${id}${n}.webp` : k); };
 const petThumb = (i = stageIdx(), id = S.data.profile.pet) => THUMB(id, i + 1);
+// 감정 장면: 같은 방, 같은 친구가 폴짝 뛰거나(joy) 눈물을 머금은(tear) 그림
+const REACT_IMG = (id, n, kind) => { const k = `img/react-${id}${n}-${kind}.webp`; return (window.__IMG && window.__IMG[k]) || (window.__SCENE_URL ? window.__SCENE_URL + `react-${id}${n}-${kind}.webp` : k); };
+function preloadReact() { if (!S.data) return; const id = S.data.profile.pet, n = stageIdx() + 1; ['joy', 'tear'].forEach(k => { const i = new Image(); i.src = REACT_IMG(id, n, k); }); }
+let reactT = [];
+function burst(layer, chars, cls, n) { for (let i = 0; i < n; i++) { const s = document.createElement('span'); s.className = 'fx-p ' + cls; s.textContent = chars[i % chars.length]; s.style.left = (28 + Math.random() * 44) + '%'; s.style.top = (42 + Math.random() * 30) + '%'; s.style.animationDelay = (Math.random() * .5).toFixed(2) + 's'; layer.appendChild(s); setTimeout(() => s.remove(), 2600); } }
+// 친구가 상대의 감정을 따라 몸으로 반응한다: 기쁨(폴짝), 눈물·서운·감동(눈물 머금기), 놀람, 끄덕
+function petReact(kind, where = '#talkPet') {
+  const fr = $(where); if (!fr || !S.data) return;
+  let fx = fr.querySelector('.fx-img'), layer = fr.querySelector('.fx-layer');
+  if (!fx) { fx = document.createElement('img'); fx.className = 'fx-img'; fx.alt = ''; fr.appendChild(fx); layer = document.createElement('div'); layer.className = 'fx-layer'; fr.appendChild(layer); }
+  reactT.forEach(clearTimeout); reactT = []; fr.classList.remove('r-hold', 'r-sad', 'r-glow'); fx.classList.remove('on', 'snap');
+  const id = S.data.profile.pet, n = stageIdx() + 1, later = (ms, f) => reactT.push(setTimeout(f, ms));
+  if (kind === 'joy') {
+    fx.src = REACT_IMG(id, n, 'joy'); fr.classList.add('r-hold'); fx.classList.add('snap');
+    const on = () => fx.classList.add('on'), off = () => fx.classList.remove('on');
+    on(); later(560, off); later(800, on); later(1650, () => { off(); later(200, () => fr.classList.remove('r-hold')); });
+    burst(layer, ['✦', '✧', '✦'], 'spark', 9);
+  } else if (kind === 'tear' || kind === 'sad' || kind === 'moved') {
+    fx.src = REACT_IMG(id, n, 'tear'); fr.classList.add('r-hold'); if (kind === 'sad') fr.classList.add('r-sad');
+    requestAnimationFrame(() => fx.classList.add('on'));
+    if (kind === 'moved') burst(layer, ['♥', '♡', '♥'], 'heart', 5);
+    later(20000, () => { fx.classList.remove('on'); fr.classList.remove('r-sad'); later(900, () => fr.classList.remove('r-hold')); });
+  } else if (kind === 'surprise') { burst(layer, ['!'], 'bang', 1); }
+  else { fr.classList.add('r-glow'); later(1600, () => fr.classList.remove('r-glow')); }
+}
 const stageName = (i = stageIdx()) => `${STAGES[i].pre} ${petInfo().name}`;
 const petName = () => S.data.profile.petName;
 
@@ -1031,7 +1070,7 @@ function renderHome() {
   if (last) $('#recentClueText').textContent = last.clue;
 }
 $('#homePet').onclick = () => {
-  const el = $('#homePet'); el.classList.remove('hop'); void el.offsetWidth; el.classList.add('hop');
+  petReact('joy', '#homePet');
   $('#bubbleText').textContent = Math.random() < .35 ? `${petInfo().touch}. ${call()}, 쓰다듬어 줘서 좋아.` : homeLine();
 };
 $('#talkBtn').onclick = () => { if (S.talk && S.talk.mode === 'free') closeActive(); if (S.talk && !MSGS().children.length) renderActive(); go('talk'); };
@@ -1158,7 +1197,7 @@ async function ask(body, tries = 1) {
         sleep(body.mode === 'book' ? 65000 : 20000).then(() => { throw new Error('timeout'); }),
       ]);
       const j = await r.json();
-      if (r.ok && j.text) return j.text.trim();
+      if (r.ok && j.text) { S.lastReact = j.react || null; return j.text.trim(); }
       last = new Error(j.error || 'bad');
     } catch (e) { last = e; }
     await sleep(800);
@@ -1171,7 +1210,7 @@ async function startTalk(kind, avoid) {
   wakeServer();
   S.busy = true; MSGS().innerHTML = ''; setComposer(true); focusAnswer();
   $('#talkPetImg').src = petImg(); $('#talkPetName').textContent = petName(); 
-  $('#talkSub').textContent = stageName();
+  $('#talkSub').textContent = stageName(); preloadReact();
   const d = S.data, num = d.talks.filter(t => t.done).length + 1;
   if (kind === 'free') {
     S.talk = { id: Date.now().toString(36), date: new Date().toISOString(), mode: 'free', qid: 'free', domain: 'free', title: '털어놓기', num, question: '', messages: [], turn: 0, phase: 'answer' };
@@ -1191,7 +1230,7 @@ async function startTalk(kind, avoid) {
     try {
       const text = await ask({ mode: 'next', question: lastIv.question, history: lastIv.messages.filter(m => m.who === 'me' || m.who === 'pet').slice(-12).map(m => ({ who: m.who, t: m.t })) });
       thinking(false); S.talk.question = text;
-      await petSay(text);
+      await petSay(text); petReact(S.lastReact || 'nod');
       S.busy = false; setComposer(true, '편하게 이야기해 줘'); return;
     } catch { thinking(false); MSGS().innerHTML = ''; }
   }
@@ -1245,6 +1284,7 @@ async function friendReply() {
     const text = await ask({ mode: T.mode, question: T.question, history: T.messages.filter(m => m.who === 'me' || m.who === 'pet').map(m => ({ who: m.who, t: m.t })) });
     thinking(false);
     await petSay(text);
+    petReact(S.lastReact || 'nod');
   } catch (e) {
     thinking(false);
     const n = document.createElement('div'); n.className = 'msg from-pet'; n.textContent = '앗, 잠깐 말이 끊겼어. 아래 버튼을 눌러 줄래?'; MSGS().appendChild(n);
@@ -1273,7 +1313,7 @@ async function finishTalk(skipClue) {
   card.innerHTML = `<div class="k">오늘 알게 된 나</div><textarea class="input" rows="2" placeholder="오늘의 나를 한 줄로">${esc(suggestion)}</textarea><div class="row"><button class="btn" data-a="save">이렇게 남길래</button><button class="btn soft" data-a="skip" style="flex:0 0 96px">안 남길래</button></div>`;
   MSGS().appendChild(card); scrollLog();
   S.busy = false;
-  $('[data-a=save]', card).onclick = () => { const v = $('textarea', card).value.trim(); card.remove(); saveTalk(v || null); };
+  $('[data-a=save]', card).onclick = () => { const v = $('textarea', card).value.trim(); card.remove(); saveTalk(v || null); if (v) petReact('joy'); };
   $('[data-a=skip]', card).onclick = () => { card.remove(); saveTalk(null); };
 }
 const recOf = (T, clue) => ({ id: T.id, date: T.date, mode: T.mode, qid: T.qid, domain: T.domain, title: T.title, num: T.num, question: T.question, messages: T.messages, clue, mood: T.mood ?? 0, done: true, chain: T.chain || 0 });
@@ -1312,7 +1352,7 @@ function closeActive() {
 }
 // 저장해 둔 대화를 화면에 다시 그린다
 function renderActive() {
-  const T = S.talk; MSGS().innerHTML = '';
+  const T = S.talk; MSGS().innerHTML = ''; preloadReact();
   $('#talkPetImg').src = petImg(); $('#talkPetName').textContent = petName(); $('#talkSub').textContent = stageName();
   if (T.header) msgDom('sys', T.header);
   T.messages.forEach(m => msgDom(m.who, m.t));
