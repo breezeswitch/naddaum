@@ -343,6 +343,9 @@ img.crop,.pet-opt img,.lineup img,.modal img,.book-cover img,.empty img,#obPetIm
 .fx-p.bang{color:#FFE2A8;font-size:36px;font-weight:800;left:60%!important;top:28%!important;animation:fxPop .8s ease-out forwards;text-shadow:0 0 12px rgba(255,210,140,.9)}
 @keyframes fxUp{0%{opacity:0;transform:translateY(12px) scale(.6)}20%{opacity:1}100%{opacity:0;transform:translateY(-80px) scale(1.1)}}
 @keyframes fxPop{0%{opacity:0;transform:scale(.4)}30%{opacity:1;transform:scale(1.25)}100%{opacity:0;transform:scale(1)}}
+#talk .stage .friend img{transition:transform .3s ease}
+#talk .stage .friend.r-joy img{transform:scale(1.06)!important}
+@media (max-height:700px){#talk .stage .friend.r-joy img{transform:scale(1)!important;object-position:50% 70%}}
 </style>
 </head>
 <body>
@@ -841,12 +844,12 @@ function petReact(kind, where = '#talkPet') {
   const fr = $(where); if (!fr || !S.data) return;
   let fx = fr.querySelector('.fx-img'), layer = fr.querySelector('.fx-layer');
   if (!fx) { fx = document.createElement('img'); fx.className = 'fx-img'; fx.alt = ''; fr.appendChild(fx); layer = document.createElement('div'); layer.className = 'fx-layer'; fr.appendChild(layer); }
-  reactT.forEach(clearTimeout); reactT = []; fr.classList.remove('r-hold', 'r-sad', 'r-glow'); fx.classList.remove('on', 'snap');
+  reactT.forEach(clearTimeout); reactT = []; fr.classList.remove('r-hold', 'r-sad', 'r-glow', 'r-joy'); fx.classList.remove('on', 'snap');
   const id = S.data.profile.pet, n = stageIdx() + 1, later = (ms, f) => reactT.push(setTimeout(f, ms));
   if (kind === 'joy') {
-    fx.src = REACT_IMG(id, n, 'joy'); fr.classList.add('r-hold'); fx.classList.add('snap');
+    fx.src = REACT_IMG(id, n, 'joy'); fr.classList.add('r-hold', 'r-joy'); fx.classList.add('snap');
     const on = () => fx.classList.add('on'), off = () => fx.classList.remove('on');
-    on(); later(560, off); later(800, on); later(1650, () => { off(); later(200, () => fr.classList.remove('r-hold')); });
+    on(); later(560, off); later(800, on); later(1650, () => { off(); later(200, () => fr.classList.remove('r-hold', 'r-joy')); });
     burst(layer, ['✦', '✧', '✦'], 'spark', 9);
   } else if (kind === 'tear' || kind === 'sad' || kind === 'moved') {
     fx.src = REACT_IMG(id, n, 'tear'); fr.classList.add('r-hold'); if (kind === 'sad') fr.classList.add('r-sad');
