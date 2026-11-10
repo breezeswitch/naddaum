@@ -430,6 +430,7 @@ img.crop,.pet-opt img,.lineup img,.modal img,.book-cover img,.empty img,#obPetIm
       <div class="lock-err" id="lockErr"></div>
       <button class="btn" id="lockBtn">열기</button>
       <button class="btn ghost" id="forgotBtn">비밀번호를 잊었어요</button>
+      <button class="btn ghost" id="introFromLock" style="margin-top:0;font-size:14px;opacity:.85">앱 소개 다시 보기</button>
     </div>
   </section>
 
@@ -923,8 +924,10 @@ function introShow(i) {
   $('#introDots').innerHTML = [0, 1, 2, 3, 4].map(k => `<i class="${k === i ? 'on' : ''}"></i>`).join('');
   $('#introNext').textContent = i === 4 ? '친구 만나러 가기' : '다음';
 }
+// 소개 내용이 바뀌면 이 번호를 올린다. 이미 쓰던 사람에게도 새 소개를 한 번 보여 준다
+const INTRO_VER = '3';
 function introFinish() {
-  store.set('ndm.intro', '1'); const f = introDone; introDone = null; f && f();
+  store.set('ndm.intro', INTRO_VER); const f = introDone; introDone = null; f && f();
   // 휴대폰에서 아직 바탕화면 앱이 아니면, 설치 방법을 한 번 띄워 준다
   if (isPhone() && !isStandalone() && !introFinish._shown) { introFinish._shown = true; setTimeout(() => showInstallGuide(true), 500); }
 }
@@ -974,7 +977,8 @@ function showLock() {
   const has = store.get(STORE);
   $$('.screen').forEach(s => s.classList.remove('on'));
   $('#nav').classList.remove('on');
-  if (!has) { if (!store.get('ndm.intro')) { showIntro(() => { $('#intro').classList.remove('on'); $('#onboard').classList.add('on'); obGo(1); }); return; } $('#onboard').classList.add('on'); obGo(1); return; }
+  if (has && store.get('ndm.intro') !== INTRO_VER) { showIntro(() => { $('#intro').classList.remove('on'); $('#lock').classList.add('on'); setTimeout(() => $('#lockInput').focus(), 300); }); return; }
+  if (!has) { if (store.get('ndm.intro') !== INTRO_VER) { showIntro(() => { $('#intro').classList.remove('on'); $('#onboard').classList.add('on'); obGo(1); }); return; } $('#onboard').classList.add('on'); obGo(1); return; }
   $('#lock').classList.add('on');
   setTimeout(() => $('#lockInput').focus(), 300);
 }
@@ -996,6 +1000,7 @@ async function unlock() {
 }
 function lockNow() { if (S.data && S.talk) persistTalk(); S.data = null; S.key = null; S.talk = null; $('#msgs').innerHTML = ''; showLock(); }
 $('#lockBtn').onclick = unlock;
+$('#introFromLock').onclick = () => showIntro(() => { $('#intro').classList.remove('on'); $('#lock').classList.add('on'); });
 $('#lockInput').addEventListener('keydown', e => { if (e.key === 'Enter') unlock(); });
 $('#lockNow').onclick = lockNow;
 $('#forgotBtn').onclick = () => modal(`<h3>비밀번호를 잊었나요?</h3><p class="muted">이야기는 이 기기 안에서 비밀번호로만 열리도록 잠겨 있어서, 누구도 대신 열어 줄 수 없어요. 다시 시작하려면 기존 기록을 지워야 해요.</p><div class="stack"><button class="btn soft" id="mCancel">다시 떠올려 볼게요</button><button class="btn ghost" id="mWipe" style="color:#b5543c">기록을 지우고 처음부터</button></div>`, c => {
