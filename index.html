@@ -923,13 +923,14 @@ async function unlock() {
     const r = await openData(box, pw);
     S.data = migrate(r.data); S.key = r.key; S.salt = r.salt; wakeServer();
     $('#lock').classList.remove('on');
-    go('home');
+    if (!resumeActive()) go('home');
+    setTimeout(queueMemo, 1500);
   } catch (e) {
     $('#lockErr').textContent = '비밀번호가 달라요. 천천히 다시 해 볼까요?';
     $('.lock-body').classList.add('shake'); setTimeout(() => $('.lock-body').classList.remove('shake'), 400);
   } finally { $('#lockBtn').disabled = false; }
 }
-function lockNow() { S.data = null; S.key = null; S.talk = null; $('#msgs').innerHTML = ''; showLock(); }
+function lockNow() { if (S.data && S.talk) persistTalk(); S.data = null; S.key = null; S.talk = null; $('#msgs').innerHTML = ''; showLock(); }
 $('#lockBtn').onclick = unlock;
 $('#lockInput').addEventListener('keydown', e => { if (e.key === 'Enter') unlock(); });
 $('#lockNow').onclick = lockNow;
@@ -946,6 +947,7 @@ document.addEventListener('visibilitychange', () => {
 function migrate(d) {
   d.talks ||= []; d.rests ||= []; d.kindWords ||= []; d.settings ||= { autoLock: true };
   d.ai ||= { on: false, key: '', model: '' }; d.events ||= {};
+  d.memo ||= ''; d.memoIds ||= []; if (d.active === undefined) d.active = null;
   return d;
 }
 
@@ -1023,7 +1025,7 @@ function renderHome() {
   const next = STAGES[i + 1];
   if (next) { const span = next.min - STAGES[i].min; $('#growBar').style.width = `${Math.max(4, (p - STAGES[i].min) / span * 100)}%`; $('#stageNext').textContent = `다음 성장까지 이야기 ${next.min - p}개`; }
   else { $('#growBar').style.width = '100%'; $('#stageNext').textContent = `함께 쌓은 이야기 ${p}개`; }
-  $('#talkBtn').textContent = doneToday() ? '질문 하나 더 받기' : '이야기 나누기';
+  $('#talkBtn').textContent = S.talk && S.talk.mode !== 'free' ? '이어서 이야기하기' : doneToday() ? '질문 하나 더 받기' : '이야기 나누기';
   const last = [...d.talks].reverse().find(t => t.clue);
   $('#recentClue').style.display = last ? 'block' : 'none';
   if (last) $('#recentClueText').textContent = last.clue;
@@ -1032,8 +1034,8 @@ $('#homePet').onclick = () => {
   const el = $('#homePet'); el.classList.remove('hop'); void el.offsetWidth; el.classList.add('hop');
   $('#bubbleText').textContent = Math.random() < .35 ? `${petInfo().touch}. ${call()}, 쓰다듬어 줘서 좋아.` : homeLine();
 };
-$('#talkBtn').onclick = () => { S.talk = null; $('#msgs').innerHTML = ''; go('talk'); };
-$('#freeBtn').onclick = () => { S.talk = null; $('#msgs').innerHTML = ''; S.nextKind = 'free'; go('talk'); };
+$('#talkBtn').onclick = () => { if (S.talk && S.talk.mode === 'free') closeActive(); if (S.talk && !MSGS().children.length) renderActive(); go('talk'); };
+$('#freeBtn').onclick = () => { if (S.talk && S.talk.mode !== 'free') closeActive(); if (!S.talk) S.nextKind = 'free'; else if (!MSGS().children.length) renderActive(); go('talk'); };
 function checkGrowModal(before) { const now = stageIdx(); if (now > before) modal(`<img src="${petThumb(now)}"><h3>${esc(petName())}${batchim(petName()) ? '이' : '가'} 자랐어요!</h3><p class="muted">"이제 나는 ${stageName(now)}야. 네가 너를 알아갈수록 나도 자라. 고마워, ${esc(call())}."</p><button class="btn" onclick="document.getElementById('modal').classList.remove('on')">꼭 안아 주기</button>`); $('#talkPetImg').src = petImg(); $('#talkSub').textContent = stageName(); }
 function checkGrow(before) {
   const now = stageIdx();
@@ -1045,13 +1047,20 @@ function checkGrow(before) {
 // 친구의 말은 대화 서버(AI)가 만든다. 서버가 잠깐 안 되면 억지로 지어내지 않고 다시 보내기를 안내한다.
 const API = 'https://shwwmbjkdizfcguqabpx.supabase.co/functions/v1/naddaum-chat';
 const MSGS = () => $('#msgs');
+function persistTalk() { if (!S.data) return; S.data.active = S.talk ? { ...S.talk, lastAt: Date.now() } : null; save(); }
+function msgDom(who, text, cls = '') {
+  const el = document.createElement('div');
+  el.className = `msg ${who === 'pet' ? 'from-pet' : who === 'me' ? 'from-me' : who} ${cls}`; el.textContent = text;
+  MSGS().appendChild(el); return el;
+}
 function addMsg(who, text, cls = '') {
   const el = document.createElement('div');
   el.className = `msg ${who === 'pet' ? 'from-pet' : who === 'me' ? 'from-me' : who} ${cls}`; el.textContent = text;
   MSGS().appendChild(el);
   // 친구의 긴 답장은 첫 줄부터 읽을 수 있게, 나머지는 맨 아래로
   if (who === 'pet') scrollToMsg(el); else scrollLog();
-  if (S.talk && (who === 'pet' || who === 'me')) S.talk.messages.push({ who, t: text, at: Date.now() });
+  if (S.talk && (who === 'pet' || who === 'me')) { S.talk.messages.push({ who, t: text, at: Date.now() }); persistTalk(); }
+  if (S.talk && who === 'sys' && !S.talk.header) S.talk.header = text;
   return el;
 }
 function scrollToMsg(el) { const lg = $('#talk .log'); if (!lg) return; requestAnimationFrame(() => { const d = el.getBoundingClientRect().top - lg.getBoundingClientRect().top - 10; if (el.offsetHeight > lg.clientHeight - 20) lg.scrollTop += d; else lg.scrollTop = lg.scrollHeight; }); }
@@ -1123,6 +1132,20 @@ const hasAny = (t, list) => list.some(w => t.includes(w));
 function mood(t) { const p = POS_WORDS.filter(w => t.includes(w)).length, n = NEG_WORDS.filter(w => t.includes(w)).length; return p > n ? 1 : n > p ? -1 : 0; }
 
 function friendProfile() { const p = S.data.profile; return { petName: p.petName, species: petInfo().name, stage: STAGES[stageIdx()].pre, nick: p.nick, call: call(), traits: p.traits }; }
+// 첫날부터 나눈 모든 이야기: 최근 것부터 원문에 가깝게 담고, 넘치는 옛 이야기는 기억 노트(memo)가 맡는다
+function pastDigest(excludeId, budget = 20000) {
+  const talks = S.data.talks.filter(t => t.done && t.id !== excludeId);
+  const blocks = []; let used = 0;
+  for (let i = talks.length - 1; i >= 0; i--) {
+    const t = talks[i];
+    const mine = t.messages.filter(m => m.who === 'me').map(m => String(m.t).replace(/\s+/g, ' ').slice(0, 240));
+    if (!mine.length) continue;
+    const b = `[${fmtDate(t.date)} · ${t.mode === 'free' ? '털어놓기' : (t.title || '이야기')}]` + (t.question && t.mode !== 'free' ? `\n친구가 물은 것: ${String(t.question).replace(/\s+/g, ' ').slice(0, 140)}` : '') + `\n상대가 한 말: ${mine.map(x => '"' + x + '"').join(' ').slice(0, 1000)}` + (t.clue ? `\n남긴 문장: ${t.clue}` : '');
+    if (used + b.length > budget) break;
+    blocks.push(b); used += b.length;
+  }
+  return blocks.reverse().join('\n\n');
+}
 function memoryList() { return S.data.talks.filter(t => t.clue).slice(-14).map(t => t.clue); }
 function recentQuote() { const qs = S.data.talks.filter(t => t.done && t.mode !== 'free').slice(-5).flatMap(t => t.messages.filter(m => m.who === 'me').map(m => pickQuote(m.t))).filter(Boolean); return qs.length ? pick(qs) : ''; }
 function wakeServer() { try { fetch(API, { method: 'GET' }).catch(() => {}); } catch {} }
@@ -1131,7 +1154,7 @@ async function ask(body, tries = 1) {
   for (let i = 0; i < tries; i++) {
     try {
       const r = await Promise.race([
-        fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile: friendProfile(), memory: memoryList(), kind: S.data.kindWords.slice(-3).map(k => k.t), ...body }) }),
+        fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile: friendProfile(), memory: memoryList(), kind: S.data.kindWords.slice(-3).map(k => k.t), ...(['interview', 'free', 'next'].includes(body.mode) ? { memo: S.data.memo, past: pastDigest(S.talk && S.talk.id) } : {}), ...body }) }),
         sleep(body.mode === 'book' ? 65000 : 20000).then(() => { throw new Error('timeout'); }),
       ]);
       const j = await r.json();
@@ -1236,7 +1259,7 @@ async function finishTalk(skipClue) {
   const T = S.talk; if (!T) return;
   setComposer(false); S.busy = true;
   const mine = T.messages.filter(m => m.who === 'me').map(m => m.t);
-  if (!mine.length) { S.talk = null; S.busy = false; go('home'); return; }
+  if (!mine.length) { S.talk = null; S.data.active = null; save(); S.busy = false; go('home'); return; }
   T.mood = mood(mine.join(' '));
   if (skipClue) { S.busy = false; return saveTalk(null, true); }
   thinking(true);
@@ -1253,11 +1276,11 @@ async function finishTalk(skipClue) {
   $('[data-a=save]', card).onclick = () => { const v = $('textarea', card).value.trim(); card.remove(); saveTalk(v || null); };
   $('[data-a=skip]', card).onclick = () => { card.remove(); saveTalk(null); };
 }
+const recOf = (T, clue) => ({ id: T.id, date: T.date, mode: T.mode, qid: T.qid, domain: T.domain, title: T.title, num: T.num, question: T.question, messages: T.messages, clue, mood: T.mood ?? 0, done: true, chain: T.chain || 0 });
 async function saveTalk(clue, quiet) {
   const T = S.talk, before = stageIdx();
-  const rec = { id: T.id, date: T.date, mode: T.mode, qid: T.qid, domain: T.domain, title: T.title, num: T.num, question: T.question, messages: T.messages, clue, mood: T.mood ?? 0, done: true, chain: T.chain || 0 };
-  S.data.talks.push(rec); await save();
-  S.talk = null;
+  S.data.talks.push(recOf(T, clue)); S.data.active = null; S.talk = null;
+  await save(); queueMemo();
   if (quiet) return before;
   if (clue) addMsg('sys', `나에 관한 책에 한 줄이 생겼어요 · ${clue}`);
   await petSay(pick([`오늘도 이야기해 줘서 고마워, ${call()}. 너를 알아가는 게 제일 재밌어.`, '오늘 너, 정말 솔직했어. 그런 네가 좋아.', '이야기 끝! 이제 좀 쉬자. 나는 여기 있을게.']));
@@ -1278,16 +1301,57 @@ async function otherQuestion() {
   await startTalk('daily', cur);
 }
 // 대화 중에 화면을 떠나면, 나눈 이야기는 저장해 둔다
-async function leaveTalk() {
-  const T = S.talk;
-  if (T && !S.busy && T.messages.some(m => m.who === 'me')) { T.mood = mood(T.messages.filter(m => m.who === 'me').map(m => m.t).join(' ')); await saveTalk(null, true); }
-  else if (T && !S.busy) S.talk = null;
+// 대화 중에 화면을 떠나도 대화는 끝나지 않는다. 그대로 저장해 두었다가 다시 오면 이어서 한다
+async function leaveTalk() { if (S.talk) persistTalk(); }
+// 진행 중이던 대화를 조용히 마무리해 책에 넣는다 (다른 종류의 대화를 시작하거나, 너무 오래 지났을 때)
+function closeActive() {
+  const T = S.talk || S.data.active; if (!T) return;
+  S.talk = null; S.data.active = null; MSGS().innerHTML = '';
+  if (T.messages && T.messages.some(m => m.who === 'me')) { T.mood = mood(T.messages.filter(m => m.who === 'me').map(m => m.t).join(' ')); S.data.talks.push(recOf(T, null)); queueMemo(); }
+  save();
+}
+// 저장해 둔 대화를 화면에 다시 그린다
+function renderActive() {
+  const T = S.talk; MSGS().innerHTML = '';
+  $('#talkPetImg').src = petImg(); $('#talkPetName').textContent = petName(); $('#talkSub').textContent = stageName();
+  if (T.header) msgDom('sys', T.header);
+  T.messages.forEach(m => msgDom(m.who, m.t));
+  setTalkTools(); setComposer(true, T.mode === 'free' ? '편하게 털어놔도 돼' : '편하게 이야기해 줘'); scrollLog();
+}
+// 앱을 나갔다가 다시 들어오면 하던 대화로 바로 돌아간다 (12시간이 지나면 마무리하고 새로 시작)
+function resumeActive() {
+  const a = S.data.active; if (!a || !Array.isArray(a.messages)) return false;
+  const age = Date.now() - (a.lastAt || 0);
+  if (age > 12 * 3600e3) { S.talk = a; closeActive(); return false; }
+  S.talk = a; renderActive(); go('talk');
+  const last = a.messages.at(-1);
+  if (last && last.who === 'me') { S.busy = true; friendReply().finally(() => { S.busy = false; }); }
+  else if (age > 10 * 60e3) {
+    const t = new Date(); msgDom('sys', `${t.getHours() < 12 ? '오전' : '오후'} ${(t.getHours() % 12) || 12}:${String(t.getMinutes()).padStart(2, '0')} · 다시 이어서`);
+    petSay(pick([`${call()}, 다시 왔구나! 아까 하던 이야기 이어서 해 줘. 천천히 해도 돼.`, `기다리고 있었어, ${call()}. 아까 그 이야기, 이어서 들려줄래?`, `${call()}, 어서 와. 우리 아까 하던 이야기 계속하자.`]));
+  }
+  return true;
+}
+// 대화가 끝날 때마다 기억 노트를 고쳐 쓴다. 첫날부터의 모든 이야기가 이 노트에 쌓인다
+let memoRunning = false;
+async function queueMemo() {
+  if (memoRunning || !S.data) return; memoRunning = true;
+  try {
+    for (let k = 0; k < 30; k++) {
+      const d = S.data; if (!d) break;
+      const t = d.talks.find(t => t.done && t.messages.some(m => m.who === 'me') && !d.memoIds.includes(t.id));
+      if (!t) break;
+      const text = await ask({ mode: 'memo', prev: d.memo, date: fmtDate(t.date), title: t.mode === 'free' ? '털어놓기' : t.title, question: t.question, history: t.messages.map(m => ({ who: m.who, t: m.t })) });
+      if (!S.data || S.data !== d) break;
+      d.memo = text.slice(0, 3200); d.memoIds.push(t.id); await save();
+    }
+  } catch {} finally { memoRunning = false; }
 }
 $('#sendBtn').onclick = onSend;
 const autoGrow = () => { const a = $('#answer'); a.style.height = 'auto'; a.style.height = Math.min(140, a.scrollHeight) + 'px'; };
 $('#answer').addEventListener('input', autoGrow);
 $('#answer').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && window.matchMedia('(pointer:fine)').matches) { e.preventDefault(); onSend(); } });
-$('#endTalk').onclick = () => { if (!S.talk || S.busy) return; if (S.talk.messages.some(m => m.who === 'me')) finishTalk(); else { S.talk = null; go('home'); } };
+$('#endTalk').onclick = () => { if (!S.talk || S.busy) return; if (S.talk.messages.some(m => m.who === 'me')) finishTalk(); else { S.talk = null; S.data.active = null; save(); go('home'); } };
 $('#otherQ').onclick = otherQuestion;
 
 /* ---------- 나에 관한 책 ---------- */
