@@ -351,6 +351,13 @@ img.crop,.pet-opt img,.lineup img,.modal img,.book-cover img,.empty img,#obPetIm
 @keyframes talkNudge{40%{transform:scale(1.025)}}
 #talk .stage #talkPet.r-hold img{animation:none!important}
 #talk .stage #talkPet.r-joy img{object-position:50% var(--fpj,70%)!important}
+/* 한 줄 남기기 카드: 버튼이 카드 밖으로 넘치지 않게 */
+.clue-card{max-width:100%;box-sizing:border-box;overflow:hidden}
+.clue-card .row{display:flex;gap:8px;width:100%}
+.clue-card .row .btn{min-width:0;white-space:nowrap}
+.clue-card [data-a=save]{flex:1 1 auto!important;width:auto!important}
+.clue-card [data-a=skip]{flex:0 0 auto!important;width:auto!important;padding-left:18px;padding-right:18px}
+#talk .log{overflow-x:hidden}
 </style>
 </head>
 <body>
