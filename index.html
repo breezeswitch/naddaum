@@ -344,8 +344,13 @@ img.crop,.pet-opt img,.lineup img,.modal img,.book-cover img,.empty img,#obPetIm
 @keyframes fxUp{0%{opacity:0;transform:translateY(12px) scale(.6)}20%{opacity:1}100%{opacity:0;transform:translateY(-80px) scale(1.1)}}
 @keyframes fxPop{0%{opacity:0;transform:scale(.4)}30%{opacity:1;transform:scale(1.25)}100%{opacity:0;transform:scale(1)}}
 #talk .stage .friend img{transition:transform .3s ease}
-#talk .stage .friend.r-joy img{transform:scale(1.06)!important}
-@media (max-height:700px){#talk .stage .friend.r-joy img{transform:scale(1)!important;object-position:50% 70%}}
+/* 대화 화면: 화면 크기에 맞춰 친구가 머리부터 보이도록 위치를 계산해서 맞춘다 (app.js fitTalkStage) */
+#talk .stage #talkPet img{transform:scale(1);transform-origin:50% 90%;object-position:50% var(--fp,80%)!important;animation:talkBreath 7s ease-in-out infinite;transition:object-position .35s ease}
+@keyframes talkBreath{50%{transform:scale(1.012)}}
+#talk .stage #talkPet.talking img{animation:talkNudge .6s ease}
+@keyframes talkNudge{40%{transform:scale(1.025)}}
+#talk .stage #talkPet.r-hold img{animation:none!important}
+#talk .stage #talkPet.r-joy img{object-position:50% var(--fpj,70%)!important}
 </style>
 </head>
 <body>
@@ -837,6 +842,22 @@ const petThumb = (i = stageIdx(), id = S.data.profile.pet) => THUMB(id, i + 1);
 // 감정 장면: 같은 방, 같은 친구가 폴짝 뛰거나(joy) 눈물을 머금은(tear) 그림
 const REACT_IMG = (id, n, kind) => { const k = `img/react-${id}${n}-${kind}.webp`; return (window.__IMG && window.__IMG[k]) || (window.__SCENE_URL ? window.__SCENE_URL + `react-${id}${n}-${kind}.webp` : k); };
 function preloadReact() { if (!S.data) return; const id = S.data.profile.pet, n = stageIdx() + 1; ['joy', 'tear'].forEach(k => { const i = new Image(); i.src = REACT_IMG(id, n, k); }); }
+// 단계별로 친구가 그림 속 어디에 있는지(위·아래, 그림 높이 대비). 대화 화면이 짧아도 머리부터 보이게 맞춘다
+const ANI_SPAN = [[0.57, 0.85], [0.53, 0.85], [0.49, 0.84], [0.45, 0.84]];
+function fitTalkStage() {
+  const st = $('#talkStage'); if (!st || !S.data || !st.clientHeight) return;
+  const W = st.clientWidth, H = st.clientHeight, imgH = W / (720 / 1279);
+  const calc = (lift) => {
+    if (imgH <= H) return 50;
+    const f = H / imgH, [a, b] = ANI_SPAN[stageIdx()];
+    let top = Math.min((a + b) / 2 - f / 2, a - lift);
+    top = Math.max(0, Math.min(top, 1 - f));
+    return top / (1 - f) * 100;
+  };
+  st.style.setProperty('--fp', calc(0.05).toFixed(1) + '%');
+  st.style.setProperty('--fpj', calc(0.12).toFixed(1) + '%');
+}
+window.addEventListener('resize', () => { if (document.body.classList.contains('in-talk')) fitTalkStage(); });
 let reactT = [];
 function burst(layer, chars, cls, n) { for (let i = 0; i < n; i++) { const s = document.createElement('span'); s.className = 'fx-p ' + cls; s.textContent = chars[i % chars.length]; s.style.left = (28 + Math.random() * 44) + '%'; s.style.top = (42 + Math.random() * 30) + '%'; s.style.animationDelay = (Math.random() * .5).toFixed(2) + 's'; layer.appendChild(s); setTimeout(() => s.remove(), 2600); } }
 // 친구가 상대의 감정을 따라 몸으로 반응한다: 기쁨(폴짝), 눈물·서운·감동(눈물 머금기), 놀람, 끄덕
@@ -869,6 +890,7 @@ function go(id, fromPop) {
   if (!fromPop && ['home', 'talk', 'book', 'settings'].includes(id)) { try { (id === 'home' ? history.replaceState : history.pushState).call(history, { s: id }, '', '#' + id); } catch {} }
   $$('.screen').forEach(s => s.classList.toggle('on', s.id === id));
   document.body.classList.toggle('in-talk', id === 'talk');
+  if (id === 'talk') requestAnimationFrame(fitTalkStage);
   $('#nav').classList.toggle('on', ['home', 'talk', 'book'].includes(id));
   $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.go === id));
   window.scrollTo(0, 0);
@@ -1078,7 +1100,7 @@ $('#homePet').onclick = () => {
 };
 $('#talkBtn').onclick = () => { if (S.talk && S.talk.mode === 'free') closeActive(); if (S.talk && !MSGS().children.length) renderActive(); go('talk'); };
 $('#freeBtn').onclick = () => { if (S.talk && S.talk.mode !== 'free') closeActive(); if (!S.talk) S.nextKind = 'free'; else if (!MSGS().children.length) renderActive(); go('talk'); };
-function checkGrowModal(before) { const now = stageIdx(); if (now > before) modal(`<img src="${petThumb(now)}"><h3>${esc(petName())}${batchim(petName()) ? '이' : '가'} 자랐어요!</h3><p class="muted">"이제 나는 ${stageName(now)}야. 네가 너를 알아갈수록 나도 자라. 고마워, ${esc(call())}."</p><button class="btn" onclick="document.getElementById('modal').classList.remove('on')">꼭 안아 주기</button>`); $('#talkPetImg').src = petImg(); $('#talkSub').textContent = stageName(); }
+function checkGrowModal(before) { const now = stageIdx(); if (now > before) modal(`<img src="${petThumb(now)}"><h3>${esc(petName())}${batchim(petName()) ? '이' : '가'} 자랐어요!</h3><p class="muted">"이제 나는 ${stageName(now)}야. 네가 너를 알아갈수록 나도 자라. 고마워, ${esc(call())}."</p><button class="btn" onclick="document.getElementById('modal').classList.remove('on')">꼭 안아 주기</button>`); $('#talkPetImg').src = petImg(); $('#talkSub').textContent = stageName(); fitTalkStage(); }
 function checkGrow(before) {
   const now = stageIdx();
   renderHome();
@@ -1213,7 +1235,7 @@ async function startTalk(kind, avoid) {
   wakeServer();
   S.busy = true; MSGS().innerHTML = ''; setComposer(true); focusAnswer();
   $('#talkPetImg').src = petImg(); $('#talkPetName').textContent = petName(); 
-  $('#talkSub').textContent = stageName(); preloadReact();
+  $('#talkSub').textContent = stageName(); preloadReact(); requestAnimationFrame(fitTalkStage);
   const d = S.data, num = d.talks.filter(t => t.done).length + 1;
   if (kind === 'free') {
     S.talk = { id: Date.now().toString(36), date: new Date().toISOString(), mode: 'free', qid: 'free', domain: 'free', title: '털어놓기', num, question: '', messages: [], turn: 0, phase: 'answer' };
@@ -1355,7 +1377,7 @@ function closeActive() {
 }
 // 저장해 둔 대화를 화면에 다시 그린다
 function renderActive() {
-  const T = S.talk; MSGS().innerHTML = ''; preloadReact();
+  const T = S.talk; MSGS().innerHTML = ''; preloadReact(); requestAnimationFrame(fitTalkStage);
   $('#talkPetImg').src = petImg(); $('#talkPetName').textContent = petName(); $('#talkSub').textContent = stageName();
   if (T.header) msgDom('sys', T.header);
   T.messages.forEach(m => msgDom(m.who, m.t));
