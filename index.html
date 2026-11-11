@@ -317,9 +317,12 @@ img.crop,.pet-opt img,.lineup img,.modal img,.book-cover img,.empty img,#obPetIm
 .g-h{font-weight:700;font-size:15.5px;margin-bottom:6px;color:var(--gold2)}
 .g-h .tiny{font-weight:400;color:var(--soft)}
 .g-steps{margin:0;padding:0;list-style:none;counter-reset:g}
-.g-steps li{counter-increment:g;position:relative;padding:6px 0 6px 32px;font-size:14.5px;line-height:1.55;word-break:keep-all}
+.g-steps li{counter-increment:g;position:relative;padding:7px 0 7px 32px;font-size:15.5px;line-height:1.7;word-break:keep-all}
 .g-steps li:before{content:counter(g);position:absolute;left:0;top:6px;width:22px;height:22px;border-radius:50%;background:rgba(242,210,155,.18);color:var(--gold2);font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .g-steps li b{color:#F5E6CC}
+.kbtn{display:inline-flex;align-items:center;gap:4px;background:#F5F1EA;color:#1B1A28;border-radius:9px;padding:1px 9px;margin:1px 2px;font-weight:700;font-size:14.5px;line-height:1.6;white-space:nowrap;box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.kbtn i{font-style:normal;font-size:16px;line-height:1}
+.g-note .kbtn{font-size:13.5px}
 .g-steps li .tiny{display:block;margin-top:2px;color:var(--soft)}
 .g-note{font-size:13.5px;line-height:1.6;color:#CFC8DD;background:rgba(143,127,214,.12);border:1px solid rgba(143,127,214,.3);border-radius:14px;padding:10px 12px;margin-bottom:10px;word-break:keep-all}
 .g-note.warn{background:rgba(240,154,138,.12);border-color:rgba(240,154,138,.35)}
@@ -394,7 +397,7 @@ img.crop,.pet-opt img,.lineup img,.modal img,.book-cover img,.empty img,#obPetIm
           <li><i>💬</i><span>친구가 질문을 건네고, 당신의 답을 듣고 <b>한 걸음 더 깊이</b> 물어요. 정답은 없어요. 떠오르는 장면을 그대로 말하면 되고, 말하기 싫은 건 건너뛰어도 돼요.</span></li>
           <li><i>🧠</i><span>친구는 <b>당신이 했던 말을 기억</b>하고, 다음에 그 말에서 이어지는 질문을 해요.</span></li>
           <li><i>☁️</i><span>바쁜 날은 <b>쉬어도 괜찮아요</b>. 친구는 아프거나 떠나지 않아요.</span></li>
-          <li><i>🔒</i><span>모든 이야기는 <b>내 기기 안에만, 비밀번호로 잠겨</b> 저장돼요.</span></li>
+          <li><i>🔒</i><span>모든 이야기는 <b>내 기기 안에만</b> 저장돼요. 원하면 비밀번호로 잠글 수도 있어요.</span></li>
         </ul>
       </div>
 
@@ -416,7 +419,7 @@ img.crop,.pet-opt img,.lineup img,.modal img,.book-cover img,.empty img,#obPetIm
         <div class="eyebrow">하나만 더</div>
         <h1>바탕화면에 두고<br>앱처럼 열어요</h1>
         <div class="home-icon-demo"><img src="img/icon-192.png" alt=""><span>나다움</span></div>
-        <p>설치 파일 없이 바탕화면에 나다움 아이콘을 만들 수 있어요. 누르면 바로 친구에게 가요.</p>
+        <p>설치 파일 없이 바탕화면에 나다움 아이콘을 만들 수 있어요. 누르면 바로 친구에게 가요.<br><span class="tiny">어려우면 안 해도 괜찮아요. 링크로 열어도 똑같이 쓸 수 있어요.</span></p>
         <button class="btn soft" id="introInstall" style="margin-top:6px">내 폰에 맞는 방법 보기</button>
       </div>
 
@@ -478,13 +481,18 @@ img.crop,.pet-opt img,.lineup img,.modal img,.book-cover img,.empty img,#obPetIm
 
     <div class="ob-step" data-step="4">
       <div class="step-dots"></div>
-      <h2 class="ob-title">우리만의 비밀번호를 정해요</h2>
-      <p class="muted">이야기는 이 기기 안에만, 비밀번호로 잠겨서 저장돼요. 비밀번호를 잊으면 아무도 열 수 없으니 꼭 기억해 주세요.</p>
+      <h2 class="ob-title">비밀번호를 만들까요?</h2>
+      <p class="muted">안 만들어도 괜찮아요. 이야기는 이 폰 안에만 저장돼요.<br>다른 사람이 내 폰을 같이 쓴다면 만들어 두면 좋아요.</p>
       <div class="stack" style="margin-top:16px">
-        <input id="pw1" class="input" type="password" autocomplete="new-password" placeholder="비밀번호 (4자 이상)">
-        <input id="pw2" class="input" type="password" autocomplete="new-password" placeholder="한 번 더">
-        <div class="lock-err" id="pwErr"></div>
-        <button class="btn" id="finishOb">우리 집으로 가기</button>
+        <button class="btn" id="noPwStart">비밀번호 없이 시작하기</button>
+        <button class="btn soft" id="showPwBox">비밀번호 만들기</button>
+        <div id="pwBox" class="stack" style="display:none">
+          <p class="tiny" style="margin:2px 0 0">비밀번호를 잊으면 아무도 열 수 없으니 꼭 기억해 주세요.</p>
+          <input id="pw1" class="input" type="password" autocomplete="new-password" placeholder="비밀번호 (4자 이상)">
+          <input id="pw2" class="input" type="password" autocomplete="new-password" placeholder="한 번 더">
+          <div class="lock-err" id="pwErr"></div>
+          <button class="btn" id="finishOb">비밀번호 만들고 시작하기</button>
+        </div>
         <button class="btn ghost" id="restoreBtn">백업 파일로 되살리기</button>
       </div>
     </div>
@@ -552,13 +560,13 @@ img.crop,.pet-opt img,.lineup img,.modal img,.book-cover img,.empty img,#obPetIm
     <div class="card">
       <div class="set-item"><div><b>친구 이름</b><div class="tiny" id="setPetName"></div></div><button class="btn soft small-btn" id="renamePet">바꾸기</button></div>
       <div class="set-item"><div><b>나를 부르는 이름</b><div class="tiny" id="setNick"></div></div><button class="btn soft small-btn" id="renameMe">바꾸기</button></div>
-      <div class="set-item"><div><b>비밀번호 바꾸기</b></div><button class="btn soft small-btn" id="changePw">바꾸기</button></div>
-      <div class="set-item"><div><b>자동 잠금</b><div class="tiny">앱을 벗어나고 3분 뒤 잠가요</div></div><button class="switch" id="autoLockSw"></button></div>
+      <div class="set-item"><div><b id="pwSetTitle">비밀번호 바꾸기</b><div class="tiny" id="pwSetSub"></div></div><button class="btn soft small-btn" id="changePw">바꾸기</button></div>
+      <div class="set-item" id="autoLockRow"><div><b>자동 잠금</b><div class="tiny">앱을 벗어나고 3분 뒤 잠가요</div></div><button class="switch" id="autoLockSw"></button></div>
       <div class="set-item"><div><b>앱 소개 다시 보기</b></div><button class="btn soft small-btn" id="replayIntro">보기</button></div>
       <div class="set-item"><div><b>바탕화면에 앱 만들기</b><div class="tiny">갤럭시, 아이폰 경로 안내</div></div><button class="btn soft small-btn" id="installGuideBtn">보기</button></div>
     </div>
     <div class="card" style="margin-top:14px">
-      <div class="set-item"><div><b>백업 파일 저장</b><div class="tiny">비밀번호로 잠긴 채로 저장돼요</div></div><button class="btn soft small-btn" id="backupBtn">저장</button></div>
+      <div class="set-item"><div><b>백업 파일 저장</b><div class="tiny" id="backupSub">비밀번호로 잠긴 채로 저장돼요</div></div><button class="btn soft small-btn" id="backupBtn">저장</button></div>
       <div class="set-item"><div><b>처음부터 다시</b><div class="tiny">모든 이야기가 지워져요</div></div><button class="btn soft small-btn" style="color:#F09A8A" id="resetBtn">지우기</button></div>
     </div>
     <p class="tiny" style="text-align:center;margin-top:18px">나다움 탐구생활은 마음 건강 진단이나 치료 도구가 아니에요.<br>많이 힘들 땐 자살예방상담전화 109, 정신건강위기상담 1577-0199</p>
@@ -834,10 +842,17 @@ async function openData(box, pw) {
 }
 
 /* ---------- 상태 ---------- */
-const S = { data: null, key: null, salt: null, talk: null, hiddenAt: 0, busy: false };
+const S = { data: null, key: null, salt: null, talk: null, hiddenAt: 0, busy: false, nopw: false };
+// 비밀번호 없이 쓰는 사람: 정해진 내부 열쇠로 잠가 두고, 열 때 묻지 않는다
+const NOPW = 'ndm-open-key-v1';
 async function save() {
   if (!S.key) return;
-  store.set(STORE, JSON.stringify(await sealData(S.data, S.key, S.salt)));
+  const box = await sealData(S.data, S.key, S.salt);
+  if (S.nopw) box.nopw = 1;
+  store.set(STORE, JSON.stringify(box));
+}
+function syncPwUi() {
+  const lb = document.getElementById('lockNow'); if (lb) lb.style.display = S.nopw ? 'none' : '';
 }
 const petInfo = () => PETS.find(p => p.id === S.data.profile.pet) || PETS[0];
 const points = () => S.data.talks.filter(t => t.done).length + S.data.rests.length;
@@ -948,30 +963,50 @@ const isIOS = () => /iPhone|iPad|iPod/i.test(UA) || (navigator.platform === 'Mac
 const isAndroid = () => /Android/i.test(UA);
 const isPhone = () => isIOS() || isAndroid();
 const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-const inApp = () => /KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\//i.test(UA);
+const inApp = () => /KAKAOTALK|NAVER|Instagram|Barcelona|Threads|FBAN|FBAV|DaumApps|Line\//i.test(UA);
+const isSamsung = () => /SamsungBrowser/i.test(UA);
+const K = (t, ic) => `<span class="kbtn">${ic ? `<i>${ic}</i>` : ''}${t}</span>`;
 const GUIDE = {
-  galaxy: `<div class="g-sec"><div class="g-h">삼성 인터넷 <span class="tiny">(갤럭시 기본 인터넷)</span></div>
-    <ol class="g-steps"><li>화면 <b>아래 오른쪽 메뉴 버튼 ≡</b>를 눌러요.<span class="tiny">버튼이 안 보이면 화면을 살짝 아래로 내려 보세요.</span></li><li><b>'현재 페이지 추가'</b>를 눌러요.</li><li><b>'홈 화면'</b>을 골라요.</li><li>이름을 확인하고 <b>'추가'</b>를 누르면 끝이에요.</li></ol></div>
-    <div class="g-sec"><div class="g-h">크롬 <span class="tiny">(Chrome)</span></div>
-    <ol class="g-steps"><li>화면 <b>위 오른쪽 점 세 개 ⋮</b>를 눌러요.</li><li><b>'홈 화면에 추가'</b>를 눌러요.<span class="tiny">'앱 설치'나 '설치 및 바로가기 만들기'로 보일 수도 있어요.</span></li><li><b>'설치'</b> 또는 <b>'추가'</b>를 누르면 끝이에요.</li></ol></div>`,
+  samsung: `<div class="g-sec"><div class="g-h">삼성 인터넷 <span class="tiny">(갤럭시에 원래 있는 인터넷)</span></div>
+    <ol class="g-steps"><li>화면 <b>맨 아래 오른쪽</b>에 있는 ${K('', '≡')} 버튼을 눌러요.<span class="tiny">버튼이 안 보이면 화면을 손가락으로 아래로 살짝 끌어내려 보세요.</span></li>
+    <li>동그라미 안에 + 가 있는 ${K('추가', '⊕')} 를 눌러요.</li>
+    <li>${K('홈 화면')} 을 눌러요.</li>
+    <li>${K('추가')} 를 눌러요.<span class="tiny">한 번 더 ${K('추가')} 가 나오면 또 눌러요.</span></li>
+    <li>끝이에요! 폰 바탕화면에 <b>나다움</b> 아이콘이 생겨요.<span class="tiny">안 보이면 바탕화면을 옆으로 넘겨 보세요.</span></li></ol></div>`,
+  chrome: `<div class="g-sec"><div class="g-h">크롬 <span class="tiny">(Chrome)</span></div>
+    <ol class="g-steps"><li>화면 <b>맨 위 오른쪽</b>에 있는 점 세 개 ${K('', '⋮')} 를 눌러요.</li>
+    <li>${K('홈 화면에 추가')} 를 눌러요.<span class="tiny">${K('앱 설치')} 나 ${K('설치 및 바로가기 만들기')} 로 보이면 그걸 눌러요.</span></li>
+    <li>${K('설치')} 또는 ${K('추가')} 를 눌러요.</li>
+    <li>끝이에요! 폰 바탕화면에 <b>나다움</b> 아이콘이 생겨요.</li></ol></div>`,
+  which: `<div class="g-note">어떤 인터넷인지 모르겠다면 화면을 봐 주세요.<br>맨 아래에 ${K('', '≡')} 가 있으면 <b>삼성 인터넷</b>, 맨 위에 ${K('', '⋮')} 가 있으면 <b>크롬</b>이에요.</div>`,
   iphone: `<div class="g-sec"><div class="g-h">사파리 <span class="tiny">(Safari)</span></div>
-    <ol class="g-steps"><li>화면 아래 <b>더 보기 ⋯</b> 버튼을 누르고 <b>'공유'</b>를 눌러요.<span class="tiny">아래쪽에 공유 버튼(네모에 위쪽 화살표)이 바로 보이면 그걸 눌러도 돼요.</span></li><li>목록을 아래로 내려 <b>'홈 화면에 추가'</b>를 눌러요.<span class="tiny">안 보이면 맨 아래 '동작 편집'에서 '홈 화면에 추가'를 켜 주세요.</span></li><li><b>'웹 앱으로 열기'</b>가 켜져 있는지 확인해요.</li><li>오른쪽 위 <b>'추가'</b>를 누르면 끝이에요.</li></ol></div>
+    <ol class="g-steps"><li>화면 아래 ${K('', '⋯')} 를 누르고 ${K('공유')} 를 눌러요.<span class="tiny">네모에 위쪽 화살표가 있는 공유 버튼이 바로 보이면 그걸 눌러도 돼요.</span></li><li>목록을 아래로 내려 ${K('홈 화면에 추가')} 를 눌러요.</li><li>${K('웹 앱으로 열기')} 가 켜져 있는지 봐요.</li><li>오른쪽 위 ${K('추가')} 를 누르면 끝이에요.</li></ol></div>
     <div class="g-note">아이폰은 바탕화면 앱과 사파리의 기록이 따로 저장돼요. 이미 사파리에서 이야기를 나눴다면 <b>설정 → 백업 파일 저장</b>을 한 뒤, 바탕화면 앱에서 <b>'백업 파일로 되살리기'</b>로 옮겨 주세요.</div>`,
 };
 function showInstallGuide(auto) {
   if (isStandalone()) { modal(`<h3>이미 바탕화면 앱으로 열려 있어요</h3><p class="muted">지금처럼 바탕화면의 나다움 아이콘으로 열면 돼요.</p><button class="btn" id="gOk">좋아요</button>`, c => { $('#gOk', c).onclick = closeModal; }); return; }
   let tab = isIOS() ? 'iphone' : 'galaxy';
+  let other = false;
   const render = (c) => {
-    $('#gBody', c).innerHTML = (inApp() ? `<div class="g-note warn">지금 카카오톡이나 네이버 같은 앱 안에서 열려 있어요. 먼저 화면의 <b>⋯ 또는 ⋮ 메뉴</b>에서 <b>'다른 브라우저로 열기'</b>(아이폰은 <b>'Safari로 열기'</b>)를 눌러 주세요.</div>` : '')
-      + (tab === 'galaxy' && installEvt ? '<button class="btn" id="gInstall" style="margin:4px 0 12px">지금 바로 설치하기</button>' : '') + GUIDE[tab];
+    let body = '';
+    if (inApp()) body += `<div class="g-note warn">지금은 스레드, 인스타, 카카오톡 같은 앱 안에서 열려 있어서 바탕화면에 만들 수 없어요.<br>화면의 ${K('', '⋯')} 또는 ${K('', '⋮')} 를 누르고 ${K('다른 브라우저로 열기')}${isIOS() ? ` (아이폰은 ${K('Safari로 열기')})` : ''} 를 먼저 눌러 주세요.</div>`;
+    if (tab === 'galaxy') {
+      if (installEvt) body += '<button class="btn" id="gInstall" style="margin:4px 0 12px">버튼 한 번으로 바로 만들기</button>';
+      const first = isSamsung() ? 'samsung' : 'chrome', second = first === 'samsung' ? 'chrome' : 'samsung';
+      body += GUIDE[first];
+      body += other ? GUIDE[second] : `<button class="btn soft" id="gOther" style="margin:2px 0 10px;font-size:14.5px;padding:11px">${first === 'samsung' ? '크롬을 쓰고 있어요' : '삼성 인터넷을 쓰고 있어요'}</button>`;
+      body += GUIDE.which;
+    } else body += GUIDE.iphone;
+    $('#gBody', c).innerHTML = body;
     $$('.g-tab', c).forEach(b => b.classList.toggle('on', b.dataset.t === tab));
+    const go2 = $('#gOther', c); if (go2) go2.onclick = () => { other = true; render(c); };
     const gi = $('#gInstall', c); if (gi) gi.onclick = async () => { try { installEvt.prompt(); const r = await installEvt.userChoice; installEvt = null; if (r.outcome === 'accepted') closeModal(); else render(c); } catch { render(c); } };
   };
-  modal(`<div class="guide"><h3>바탕화면에 나다움 앱 만들기</h3><p class="tiny" style="margin:4px 0 12px">설치 파일 없이 1분이면 돼요. 내 폰을 골라 주세요.</p>
+  modal(`<div class="guide"><h3>바탕화면에 나다움 앱 만들기</h3><p class="tiny" style="margin:4px 0 12px">안 해도 괜찮아요. 링크로 열어도 똑같이 쓸 수 있어요.<br>하고 싶으면 내 폰을 골라 주세요.</p>
     <div class="g-tabs"><button class="g-tab" data-t="galaxy">갤럭시</button><button class="g-tab" data-t="iphone">아이폰</button></div>
     <div id="gBody"></div>
     <button class="btn ${auto ? 'soft' : ''}" id="gClose" style="margin-top:14px">${auto ? '나중에 할게요' : '알겠어요'}</button></div>`, c => {
-    $$('.g-tab', c).forEach(b => b.onclick = () => { tab = b.dataset.t; render(c); });
+    $$('.g-tab', c).forEach(b => b.onclick = () => { tab = b.dataset.t; other = false; render(c); });
     $('#gClose', c).onclick = closeModal; render(c);
   });
 }
@@ -984,22 +1019,27 @@ function showLock() {
   const has = store.get(STORE);
   $$('.screen').forEach(s => s.classList.remove('on'));
   $('#nav').classList.remove('on');
+  let nopwBox = false; try { nopwBox = !!(has && JSON.parse(has).nopw); } catch {}
+  if (nopwBox) { if (store.get('ndm.intro') !== INTRO_VER) { showIntro(() => { $('#intro').classList.remove('on'); openWith(NOPW, true); }); return; } openWith(NOPW, true); return; }
   if (has && store.get('ndm.intro') !== INTRO_VER) { showIntro(() => { $('#intro').classList.remove('on'); $('#lock').classList.add('on'); setTimeout(() => $('#lockInput').focus(), 300); }); return; }
   if (!has) { if (store.get('ndm.intro') !== INTRO_VER) { showIntro(() => { $('#intro').classList.remove('on'); $('#onboard').classList.add('on'); obGo(1); }); return; } $('#onboard').classList.add('on'); obGo(1); return; }
   $('#lock').classList.add('on');
   setTimeout(() => $('#lockInput').focus(), 300);
+}
+async function openWith(pw, auto) {
+  const box = JSON.parse(store.get(STORE));
+  const r = await openData(box, pw);
+  S.data = migrate(r.data); S.key = r.key; S.salt = r.salt; S.nopw = !!box.nopw; wakeServer(); syncPwUi();
+  $('#lock').classList.remove('on');
+  if (!resumeActive()) go('home');
+  setTimeout(queueMemo, 1500);
 }
 async function unlock() {
   const pw = $('#lockInput').value;
   if (!pw) return;
   $('#lockBtn').disabled = true; $('#lockErr').textContent = '';
   try {
-    const box = JSON.parse(store.get(STORE));
-    const r = await openData(box, pw);
-    S.data = migrate(r.data); S.key = r.key; S.salt = r.salt; wakeServer();
-    $('#lock').classList.remove('on');
-    if (!resumeActive()) go('home');
-    setTimeout(queueMemo, 1500);
+    await openWith(pw);
   } catch (e) {
     $('#lockErr').textContent = '비밀번호가 달라요. 천천히 다시 해 볼까요?';
     $('.lock-body').classList.add('shake'); setTimeout(() => $('.lock-body').classList.remove('shake'), 400);
@@ -1017,7 +1057,7 @@ $('#forgotBtn').onclick = () => modal(`<h3>비밀번호를 잊었나요?</h3><p 
 document.addEventListener('visibilitychange', () => {
   if (!S.data) return;
   if (document.hidden) S.hiddenAt = Date.now();
-  else if (S.data.settings.autoLock && S.hiddenAt && Date.now() - S.hiddenAt > 3 * 60 * 1000) lockNow();
+  else if (!S.nopw && S.data.settings.autoLock && S.hiddenAt && Date.now() - S.hiddenAt > 3 * 60 * 1000) lockNow();
 });
 
 function migrate(d) {
@@ -1059,19 +1099,25 @@ function renderChips() {
   $('#traitNext').disabled = OB.traits.length < 3;
 }
 $('#traitAdd').onclick = () => { const v = $('#traitCustom').value.trim(); if (!v) return; if (OB.traits.length >= 5) return toast('5개까지 고를 수 있어요'); if (!OB.traits.includes(v)) OB.traits.push(v); $('#traitCustom').value = ''; renderChips(); };
+$('#showPwBox').onclick = () => { $('#pwBox').style.display = 'flex'; $('#showPwBox').style.display = 'none'; setTimeout(() => $('#pw1').focus(), 200); };
+$('#noPwStart').onclick = () => startHome(null);
 $('#finishOb').onclick = async () => {
   const a = $('#pw1').value, b = $('#pw2').value;
   if (a.length < 4) return $('#pwErr').textContent = '4자 이상으로 정해 주세요.';
   if (a !== b) return $('#pwErr').textContent = '두 비밀번호가 달라요.';
-  $('#finishOb').disabled = true;
+  startHome(a);
+};
+async function startHome(pw) {
+  $('#finishOb').disabled = true; $('#noPwStart').disabled = true;
+  S.nopw = !pw;
   S.salt = rnd(16);
-  S.key = await deriveKey(a, S.salt);
+  S.key = await deriveKey(pw || NOPW, S.salt);
   S.data = migrate({
     v: 1, createdAt: new Date().toISOString(),
     profile: { pet: OB.pet, petName: $('#petName').value.trim(), nick: $('#nick').value.trim(), traits: OB.traits },
   });
-  await save(); wakeServer();
-  $('#finishOb').disabled = false; $('#pw1').value = $('#pw2').value = '';
+  await save(); wakeServer(); syncPwUi();
+  $('#finishOb').disabled = false; $('#noPwStart').disabled = false; $('#pw1').value = $('#pw2').value = '';
   go('home');
   setTimeout(() => modal(`<img src="${petThumb(0)}"><h3>"${esc(petName())}! 내 이름이 생겼다!"</h3><p class="muted">"이제 우리 서로 알아가자, ${esc(call())}. 네가 너에 대해 하나씩 알려 주면, 나도 조금씩 자랄 거야."</p><button class="btn" id="mStart">첫 이야기 나누기</button>`, c => { $('#mStart', c).onclick = () => { closeModal(); go('talk'); }; }), 400);
 };
@@ -1503,13 +1549,24 @@ function renderSettings() {
   const d = S.data;
   $('#setPetName').textContent = d.profile.petName; $('#setNick').textContent = d.profile.nick;
   $('#autoLockSw').classList.toggle('on', !!d.settings.autoLock);
+  $('#pwSetTitle').textContent = S.nopw ? '비밀번호 만들기' : '비밀번호 바꾸기';
+  $('#pwSetSub').textContent = S.nopw ? '지금은 비밀번호 없이 쓰고 있어요' : '';
+  $('#changePw').textContent = S.nopw ? '만들기' : '바꾸기';
+  $('#autoLockRow').style.display = S.nopw ? 'none' : '';
+  $('#backupSub').textContent = S.nopw ? '이 폰이 아니어도 열 수 있어요' : '비밀번호로 잠긴 채로 저장돼요';
 }
 const askText = (title, val, cb) => modal(`<h3>${title}</h3><input class="input" id="mIn" maxlength="10" value="${esc(val)}" style="margin:14px 0"><div class="row"><button class="btn soft" id="mNo">취소</button><button class="btn" id="mOk">저장</button></div>`, c => { $('#mNo', c).onclick = closeModal; $('#mOk', c).onclick = async () => { const v = $('#mIn', c).value.trim(); if (!v) return; await cb(v); closeModal(); renderSettings(); }; });
 $('#renamePet').onclick = () => askText('친구의 새 이름', S.data.profile.petName, async v => { S.data.profile.petName = v; await save(); });
 $('#renameMe').onclick = () => askText('나를 부르는 이름', S.data.profile.nick, async v => { S.data.profile.nick = v; await save(); });
 $('#autoLockSw').onclick = async () => { S.data.settings.autoLock = !S.data.settings.autoLock; await save(); renderSettings(); };
-$('#changePw').onclick = () => modal(`<h3>비밀번호 바꾸기</h3><div class="stack" style="margin:14px 0"><input class="input" type="password" id="cp0" placeholder="지금 비밀번호"><input class="input" type="password" id="cp1" placeholder="새 비밀번호 (4자 이상)"><input class="input" type="password" id="cp2" placeholder="새 비밀번호 한 번 더"><div class="lock-err" id="cpErr"></div></div><div class="row"><button class="btn soft" id="mNo">취소</button><button class="btn" id="mOk">바꾸기</button></div>`, c => {
+$('#changePw').onclick = () => S.nopw ? makePw() : modal(`<h3>비밀번호 바꾸기</h3><div class="stack" style="margin:14px 0"><input class="input" type="password" id="cp0" placeholder="지금 비밀번호"><input class="input" type="password" id="cp1" placeholder="새 비밀번호 (4자 이상)"><input class="input" type="password" id="cp2" placeholder="새 비밀번호 한 번 더"><div class="lock-err" id="cpErr"></div></div><div class="row"><button class="btn soft" id="mNo">취소</button><button class="btn" id="mOk">바꾸기</button></div><button class="btn ghost" id="mOff" style="margin-top:8px;font-size:14px">비밀번호 없이 쓰기</button>`, c => {
   $('#mNo', c).onclick = closeModal;
+  $('#mOff', c).onclick = async () => {
+    const o = $('#cp0', c).value;
+    if (!o) return $('#cpErr', c).textContent = '지금 비밀번호를 먼저 써 주세요.';
+    try { await openData(JSON.parse(store.get(STORE)), o); } catch { return $('#cpErr', c).textContent = '지금 비밀번호가 달라요.'; }
+    S.nopw = true; S.salt = rnd(16); S.key = await deriveKey(NOPW, S.salt); await save(); syncPwUi(); closeModal(); renderSettings(); toast('이제 비밀번호 없이 열려요');
+  };
   $('#mOk', c).onclick = async () => {
     const [o, a, b] = ['#cp0', '#cp1', '#cp2'].map(s => $(s, c).value);
     try { await openData(JSON.parse(store.get(STORE)), o); } catch { return $('#cpErr', c).textContent = '지금 비밀번호가 달라요.'; }
@@ -1518,15 +1575,26 @@ $('#changePw').onclick = () => modal(`<h3>비밀번호 바꾸기</h3><div class=
     S.salt = rnd(16); S.key = await deriveKey(a, S.salt); await save(); closeModal(); toast('비밀번호를 바꿨어요');
   };
 });
+function makePw() {
+  modal(`<h3>비밀번호 만들기</h3><p class="muted">다음부터 열 때 이 비밀번호를 물어봐요. 잊으면 아무도 열 수 없으니 꼭 기억해 주세요.</p><div class="stack" style="margin:14px 0"><input class="input" type="password" id="np1" placeholder="비밀번호 (4자 이상)"><input class="input" type="password" id="np2" placeholder="한 번 더"><div class="lock-err" id="npErr"></div></div><div class="row"><button class="btn soft" id="mNo">취소</button><button class="btn" id="mOk">만들기</button></div>`, c => {
+    $('#mNo', c).onclick = closeModal;
+    $('#mOk', c).onclick = async () => {
+      const a = $('#np1', c).value, b = $('#np2', c).value;
+      if (a.length < 4) return $('#npErr', c).textContent = '4자 이상으로 정해 주세요.';
+      if (a !== b) return $('#npErr', c).textContent = '두 비밀번호가 달라요.';
+      S.nopw = false; S.salt = rnd(16); S.key = await deriveKey(a, S.salt); await save(); syncPwUi(); closeModal(); renderSettings(); toast('비밀번호를 만들었어요');
+    };
+  });
+}
 $('#backupBtn').onclick = () => {
   const blob = new Blob([store.get(STORE)], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `나다움탐구생활_백업_${todayKey()}.json`; a.click();
-  toast('백업 파일을 저장했어요. 열 때는 같은 비밀번호가 필요해요');
+  toast(S.nopw ? '백업 파일을 저장했어요' : '백업 파일을 저장했어요. 열 때는 같은 비밀번호가 필요해요');
 };
 $('#restoreBtn').onclick = () => $('#fileIn').click();
 $('#fileIn').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
-  try { const box = JSON.parse(await f.text()); if (!(box.ct || box.weak) || !box.salt) throw 0; store.set(STORE, JSON.stringify(box)); toast('백업을 불러왔어요. 비밀번호로 열어 주세요'); showLock(); }
+  try { const box = JSON.parse(await f.text()); if (!(box.ct || box.weak) || !box.salt) throw 0; store.set(STORE, JSON.stringify(box)); toast(box.nopw ? '백업을 불러왔어요' : '백업을 불러왔어요. 비밀번호로 열어 주세요'); showLock(); }
   catch { toast('백업 파일이 아니에요'); }
   e.target.value = '';
 };
