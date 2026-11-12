@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>나다움 관리자</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{--bg:#0E1222;--card:#171C33;--line:rgba(255,255,255,.08);--txt:#F3EEE6;--soft:#A9A3BC;--gold:#E3B873;--gold2:#F2D29B;--violet:#8F7FD6}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 50% -200px,#1E2550,var(--bg));color:var(--txt);font-family:Pretendard,system-ui,sans-serif;min-height:100vh;padding:22px 16px 60px}
+.wrap{max-width:760px;margin:0 auto}
+.head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px}
+.head h1{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.head .tiny{color:var(--soft);font-size:12.5px;margin-top:4px}
+.btn{background:rgba(255,255,255,.07);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:9px 13px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit}
+.sec{margin-top:22px}
+.sec h2{font-size:15px;font-weight:700;color:var(--gold2);margin-bottom:10px;display:flex;justify-content:space-between;align-items:baseline}
+.sec h2 span{font-size:12px;color:var(--soft);font-weight:400}
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:620px){.cards{grid-template-columns:repeat(4,1fr)}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 15px}
+.card .k{font-size:12.5px;color:var(--soft)}
+.card .v{font-size:28px;font-weight:800;margin-top:4px;letter-spacing:-.02em}
+.card .v small{font-size:14px;font-weight:600;color:var(--soft);margin-left:2px}
+.card .d{font-size:12px;margin-top:3px;color:var(--soft)}
+.up{color:#9BD8A8}.down{color:#F09A8A}
+.big .v{color:var(--gold2)}
+.chart{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 14px 10px}
+.bars{display:flex;align-items:flex-end;gap:5px;height:150px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative}
+.bar i{display:block;width:100%;max-width:28px;border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,var(--gold2),#B7894A);min-height:2px}
+.bar i.zero{background:rgba(255,255,255,.08)}
+.bar b{font-size:11px;color:var(--txt);margin-bottom:3px;font-weight:700}
+.bar u{text-decoration:none;font-size:10.5px;color:var(--soft);margin-top:5px;white-space:nowrap}
+.bar.today i{background:linear-gradient(180deg,#C9BDF7,var(--violet))}
+.legend{font-size:12px;color:var(--soft);margin-top:8px;text-align:center}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{color:var(--soft);font-weight:500;font-size:12px}
+td:first-child,th:first-child{text-align:left}
+.tablebox{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:6px 12px;overflow-x:auto}
+.pill{display:inline-block;font-size:11px;padding:2px 7px;border-radius:999px;background:rgba(227,184,115,.18);color:var(--gold2);margin-left:5px;font-weight:600}
+.note{font-size:12px;color:var(--soft);line-height:1.7;margin-top:18px;background:rgba(143,127,214,.1);border:1px solid rgba(143,127,214,.25);border-radius:14px;padding:11px 13px;word-break:keep-all}
+.lock{max-width:360px;margin:18vh auto 0;text-align:center}
+.lock input{width:100%;margin:14px 0 10px;padding:13px;border-radius:14px;border:1px solid var(--line);background:#1B2140;color:var(--txt);font-size:16px;text-align:center;font-family:inherit}
+.empty{color:var(--soft);font-size:13px;padding:14px 4px}
+.hours{display:flex;align-items:flex-end;gap:2px;height:60px}
+.hours div{flex:1;background:rgba(143,127,214,.55);border-radius:3px 3px 0 0;min-height:1px}
+.hlab{display:flex;justify-content:space-between;font-size:10.5px;color:var(--soft);margin-top:4px}
+</style></head>
+<body><div class="wrap" id="app"></div>
+<script>
+const API='https://shwwmbjkdizfcguqabpx.supabase.co/functions/v1/naddaum-chat';
+const $=s=>document.querySelector(s);
+const h=new URLSearchParams(location.hash.slice(1)); if(h.get('k')){ localStorage.setItem('ndm.admin', h.get('k')); history.replaceState(null,'',location.pathname); }
+const KEY=()=>localStorage.getItem('ndm.admin')||'';
+const fmtD=d=>{const x=new Date(d+'T00:00:00');return `${x.getMonth()+1}/${x.getDate()}`;};
+const wk=d=>'일월화수목금토'[new Date(d+'T00:00:00').getDay()];
+const mins=m=>m>=60?`${Math.floor(m/60)}시간 ${m%60}분`:`${m}분`;
+const diff=(a,b,unit='')=>{ if(b==null) return ''; const d=a-b; if(d===0) return '<span>어제와 같아요</span>'; return `<span class="${d>0?'up':'down'}">어제보다 ${d>0?'+':''}${d}${unit}</span>`; };
+function lockView(msg){ $('#app').innerHTML=`<div class="lock"><h1 style="font-size:22px">나다움 관리자</h1><p style="color:var(--soft);font-size:14px;margin-top:6px">${msg||'관리자 열쇠를 넣어 주세요.'}</p><input id="k" type="password" placeholder="관리자 열쇠"><button class="btn" id="go" style="width:100%;padding:13px">열기</button></div>`; $('#go').onclick=()=>{localStorage.setItem('ndm.admin',$('#k').value.trim()); load();}; }
+async function load(){
+  if(!KEY()) return lockView();
+  let s; try{ const r=await fetch(API+'?days=30&admin='+encodeURIComponent(KEY())); if(r.status===403){ localStorage.removeItem('ndm.admin'); return lockView('열쇠가 맞지 않아요. 다시 넣어 주세요.'); } s=await r.json(); }catch(e){ $('#app').innerHTML='<p class="empty">불러오지 못했어요. 잠시 뒤 새로고침해 주세요.</p>'; return; }
+  render(s);
+}
+function render(s){
+  const days=s.days||[], T=days[days.length-1]||{}, Y=days[days.length-2]||{};
+  const avg=T.users?Math.round(T.minutes/T.users):0;
+  const last14=days.slice(-14); const maxU=Math.max(1,...last14.map(d=>d.users)); const maxM=Math.max(1,...last14.map(d=>d.minutes));
+  const hrs=Array.from({length:24},(_,i)=>((s.hours_today||[]).find(x=>x.h===i)||{n:0}).n); const maxH=Math.max(1,...hrs);
+  const tot=s.total||{};
+  $('#app').innerHTML=`
+  <div class="head"><div><h1>나다움 관리자</h1><div class="tiny">${s.generated_at} 기준 · 오늘 ${fmtD(s.today)}(${wk(s.today)})</div></div><button class="btn" id="re">새로고침</button></div>
+  <div class="sec"><h2>오늘</h2><div class="cards">
+    <div class="card big"><div class="k">오늘 쓴 사람</div><div class="v">${T.users||0}<small>명</small></div><div class="d">${diff(T.users||0,Y.users,'명')}</div></div>
+    <div class="card"><div class="k">처음 온 사람</div><div class="v">${T.new_users||0}<small>명</small></div><div class="d">${diff(T.new_users||0,Y.new_users,'명')}</div></div>
+    <div class="card"><div class="k">친구와 주고받은 말</div><div class="v">${T.replies||0}<small>번</small></div><div class="d">${diff(T.replies||0,Y.replies,'번')}</div></div>
+    <div class="card"><div class="k">함께한 시간</div><div class="v" style="font-size:${T.minutes>=60?'22px':'28px'}">${mins(T.minutes||0)}</div><div class="d">1명당 평균 ${mins(avg)}</div></div>
+  </div></div>
+  <div class="sec"><h2>최근 14일 쓴 사람 <span>막대 위 숫자 = 사람 수</span></h2><div class="chart"><div class="bars">${last14.map((d,i)=>`<div class="bar ${i===last14.length-1?'today':''}"><b>${d.users||''}</b><i class="${d.users?'':'zero'}" style="height:${d.users?Math.max(4,d.users/maxU*120):2}px"></i><u>${fmtD(d.date)}</u></div>`).join('')}</div><div class="legend">보라색 막대가 오늘이에요</div></div></div>
+  <div class="sec"><h2>최근 14일 함께한 시간 <span>막대 위 숫자 = 분</span></h2><div class="chart"><div class="bars">${last14.map((d,i)=>`<div class="bar ${i===last14.length-1?'today':''}"><b>${d.minutes||''}</b><i class="${d.minutes?'':'zero'}" style="height:${d.minutes?Math.max(4,d.minutes/maxM*120):2}px"></i><u>${fmtD(d.date)}</u></div>`).join('')}</div></div></div>
+  <div class="sec"><h2>오늘 쓴 사람들 <span>이름 없이 기기로만 보여요</span></h2><div class="tablebox">${(s.today_devices||[]).length?`<table><tr><th>기기</th><th>처음</th><th>마지막</th><th>주고받은 말</th><th>시간</th></tr>${s.today_devices.map((u,i)=>`<tr><td>${i+1}. ${u.dev||'기타'}${u.is_new?'<span class="pill">처음</span>':''}</td><td>${u.first_at}</td><td>${u.last_at}</td><td>${u.replies}번</td><td>${mins(u.minutes)}</td></tr>`).join('')}</table>`:'<p class="empty">아직 오늘 쓴 사람이 없어요.</p>'}</div></div>
+  <div class="sec"><h2>오늘 시간대별 사용</h2><div class="chart"><div class="hours">${hrs.map(n=>`<div style="height:${n?Math.max(3,n/maxH*60):1}px;${n?'':'background:rgba(255,255,255,.06)'}"></div>`).join('')}</div><div class="hlab"><span>0시</span><span>6시</span><span>12시</span><span>18시</span><span>24시</span></div></div></div>
+  <div class="sec"><h2>지금까지 <span>${tot.since?fmtD(tot.since)+'부터':''}</span></h2><div class="cards">
+    <div class="card big"><div class="k">지금까지 쓴 사람</div><div class="v">${tot.users||0}<small>명</small></div></div>
+    <div class="card"><div class="k">최근 7일 쓴 사람</div><div class="v">${tot.active7||0}<small>명</small></div></div>
+    <div class="card"><div class="k">주고받은 말 전체</div><div class="v">${tot.replies||0}<small>번</small></div></div>
+    <div class="card"><div class="k">함께한 시간 전체</div><div class="v" style="font-size:${tot.minutes>=60?'22px':'28px'}">${mins(tot.minutes||0)}</div></div>
+  </div></div>
+  <div class="sec"><h2>날짜별 기록</h2><div class="tablebox"><table><tr><th>날짜</th><th>쓴 사람</th><th>처음 온 사람</th><th>주고받은 말</th><th>시간</th></tr>${days.slice().reverse().filter(d=>d.users||d.date>=tot.since).map(d=>`<tr><td>${fmtD(d.date)}(${wk(d.date)})</td><td>${d.users}명</td><td>${d.new_users}명</td><td>${d.replies}번</td><td>${mins(d.minutes)}</td></tr>`).join('')}</table></div></div>
+  <p class="note">주고받은 말: 친구가 대답한 횟수예요. 시간: 앱을 켜 두고 쓴 시간을 1분 단위로 센 거예요.<br>서버 기록이 하루만 보관돼서 11월 11일 저녁 7시 반 이전 사용은 집계에 빠졌어요. 11월 11일 저녁부터 12일 오후 6시까지의 시간은 그때 기록을 바탕으로 한 추정치예요.<br>이야기 내용은 모이지 않아요. 기기 종류와 횟수만 이름 없이 모여요.</p>`;
+  $('#re').onclick=load;
+}
+load(); setInterval(()=>{ if(!document.hidden && KEY()) load(); }, 5*60*1000);
+</script></body></html>

@@ -397,7 +397,7 @@ img.crop,.pet-opt img,.lineup img,.modal img,.book-cover img,.empty img,#obPetIm
           <li><i>💬</i><span>친구가 질문을 건네고, 당신의 답을 듣고 <b>한 걸음 더 깊이</b> 물어요. 정답은 없어요. 떠오르는 장면을 그대로 말하면 되고, 말하기 싫은 건 건너뛰어도 돼요.</span></li>
           <li><i>🧠</i><span>친구는 <b>당신이 했던 말을 기억</b>하고, 다음에 그 말에서 이어지는 질문을 해요.</span></li>
           <li><i>☁️</i><span>바쁜 날은 <b>쉬어도 괜찮아요</b>. 친구는 아프거나 떠나지 않아요.</span></li>
-          <li><i>🔒</i><span>모든 이야기는 <b>내 기기 안에만</b> 저장돼요. 원하면 비밀번호로 잠글 수도 있어요.</span></li>
+          <li><i>🔒</i><span>모든 이야기는 <b>내 기기 안에만</b> 저장돼요. 원하면 비밀번호로 잠글 수도 있어요. (몇 명이 쓰는지 알 수 있게 이야기 내용 없이 사용 횟수만 보내요.)</span></li>
         </ul>
       </div>
 
@@ -569,7 +569,7 @@ img.crop,.pet-opt img,.lineup img,.modal img,.book-cover img,.empty img,#obPetIm
       <div class="set-item"><div><b>백업 파일 저장</b><div class="tiny" id="backupSub">비밀번호로 잠긴 채로 저장돼요</div></div><button class="btn soft small-btn" id="backupBtn">저장</button></div>
       <div class="set-item"><div><b>처음부터 다시</b><div class="tiny">모든 이야기가 지워져요</div></div><button class="btn soft small-btn" style="color:#F09A8A" id="resetBtn">지우기</button></div>
     </div>
-    <p class="tiny" style="text-align:center;margin-top:18px">나다움 탐구생활은 마음 건강 진단이나 치료 도구가 아니에요.<br>많이 힘들 땐 자살예방상담전화 109, 정신건강위기상담 1577-0199</p>
+    <p class="tiny" style="text-align:center;margin-top:18px">이야기 내용은 이 폰 밖으로 저장되지 않아요. 몇 명이 쓰는지 알 수 있게 사용 횟수와 시간만 이름 없이 보내요.<br><br>나다움 탐구생활은 마음 건강 진단이나 치료 도구가 아니에요.<br>많이 힘들 땐 자살예방상담전화 109, 정신건강위기상담 1577-0199</p>
   </section>
 
   <nav class="nav" id="nav">
@@ -1029,7 +1029,7 @@ function showLock() {
 async function openWith(pw, auto) {
   const box = JSON.parse(store.get(STORE));
   const r = await openData(box, pw);
-  S.data = migrate(r.data); S.key = r.key; S.salt = r.salt; S.nopw = !!box.nopw; wakeServer(); syncPwUi();
+  S.data = migrate(r.data); S.key = r.key; S.salt = r.salt; S.nopw = !!box.nopw; wakeServer(); syncPwUi(); track('open', isStandalone() ? 'app' : 'web');
   $('#lock').classList.remove('on');
   if (!resumeActive()) go('home');
   setTimeout(queueMemo, 1500);
@@ -1116,7 +1116,7 @@ async function startHome(pw) {
     v: 1, createdAt: new Date().toISOString(),
     profile: { pet: OB.pet, petName: $('#petName').value.trim(), nick: $('#nick').value.trim(), traits: OB.traits },
   });
-  await save(); wakeServer(); syncPwUi();
+  await save(); wakeServer(); syncPwUi(); track('open', 'new');
   $('#finishOb').disabled = false; $('#noPwStart').disabled = false; $('#pw1').value = $('#pw2').value = '';
   go('home');
   setTimeout(() => modal(`<img src="${petThumb(0)}"><h3>"${esc(petName())}! 내 이름이 생겼다!"</h3><p class="muted">"이제 우리 서로 알아가자, ${esc(call())}. 네가 너에 대해 하나씩 알려 주면, 나도 조금씩 자랄 거야."</p><button class="btn" id="mStart">첫 이야기 나누기</button>`, c => { $('#mStart', c).onclick = () => { closeModal(); go('talk'); }; }), 400);
@@ -1271,12 +1271,16 @@ function pastDigest(excludeId, budget = 20000) {
 function memoryList() { return S.data.talks.filter(t => t.clue).slice(-14).map(t => t.clue); }
 function recentQuote() { const qs = S.data.talks.filter(t => t.done && t.mode !== 'free').slice(-5).flatMap(t => t.messages.filter(m => m.who === 'me').map(m => pickQuote(m.t))).filter(Boolean); return qs.length ? pick(qs) : ''; }
 function wakeServer() { try { fetch(API, { method: 'GET' }).catch(() => {}); } catch {} }
+// 몇 명이 쓰는지 알기 위한 기록: 이야기 내용 없이 횟수와 시간만 보낸다
+const DID = (() => { try { let d = localStorage.getItem('ndm.did'); if (!d) { d = 'd-' + Array.from(rnd(10)).map(b => (b % 36).toString(36)).join(''); localStorage.setItem('ndm.did', d); } return d; } catch { return 'd-anon'; } })();
+function track(ev, mode) { try { fetch(API, { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ track: ev, did: DID, mode: mode || null }) }).catch(() => {}); } catch {} }
+setInterval(() => { if (S.data && !document.hidden) track('ping'); }, 60000);
 async function ask(body, tries = 1) {
   let last;
   for (let i = 0; i < tries; i++) {
     try {
       const r = await Promise.race([
-        fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile: friendProfile(), memory: memoryList(), kind: S.data.kindWords.slice(-3).map(k => k.t), ...(['interview', 'free', 'next'].includes(body.mode) ? { memo: S.data.memo, past: pastDigest(S.talk && S.talk.id) } : {}), ...body }) }),
+        fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ did: DID, profile: friendProfile(), memory: memoryList(), kind: S.data.kindWords.slice(-3).map(k => k.t), ...(['interview', 'free', 'next'].includes(body.mode) ? { memo: S.data.memo, past: pastDigest(S.talk && S.talk.id) } : {}), ...body }) }),
         sleep(body.mode === 'book' ? 65000 : 20000).then(() => { throw new Error('timeout'); }),
       ]);
       const j = await r.json();
@@ -1296,7 +1300,7 @@ async function startTalk(kind, avoid) {
   $('#talkSub').textContent = stageName(); preloadReact(); requestAnimationFrame(fitTalkStage);
   const d = S.data, num = d.talks.filter(t => t.done).length + 1;
   if (kind === 'free') {
-    S.talk = { id: Date.now().toString(36), date: new Date().toISOString(), mode: 'free', qid: 'free', domain: 'free', title: '털어놓기', num, question: '', messages: [], turn: 0, phase: 'answer' };
+    track('talk_start', 'free'); S.talk = { id: Date.now().toString(36), date: new Date().toISOString(), mode: 'free', qid: 'free', domain: 'free', title: '털어놓기', num, question: '', messages: [], turn: 0, phase: 'answer' };
     setTalkTools();
     addMsg('sys', `${fmtDate(S.talk.date)} · 그냥 털어놓기`);
     await petSay(pick([`${call()}, 무슨 이야기든 좋아. 좋았던 일도, 속상했던 일도 다 들을게. 나 여기 있어.`, `오늘 하루 어땠어, ${call()}? 마음에 남아 있는 거 있으면 편하게 털어놔.`, `${call()}, 그냥 수다 떨자. 아무 이야기나 괜찮아.`]));
@@ -1306,7 +1310,7 @@ async function startTalk(kind, avoid) {
   const lastIv = [...d.talks].reverse().find(t => t.done && t.mode === 'interview');
   const lastAns = lastIv ? lastIv.messages.filter(m => m.who === 'me').map(m => m.t) : [];
   if (!avoid && lastIv && lastAns.length >= 2 && lastAns.join('').length >= 60 && (lastIv.chain || 0) < 3 && num > 1) {
-    S.talk = { id: Date.now().toString(36), date: new Date().toISOString(), mode: 'interview', qid: 'next-' + Date.now().toString(36), domain: lastIv.domain, title: (lastIv.title || '').replace(/ · 이어서$/, '') + ' · 이어서', num, question: '', messages: [], turn: 0, phase: 'answer', chain: (lastIv.chain || 0) + 1, from: lastIv.id };
+    track('talk_start', 'interview'); S.talk = { id: Date.now().toString(36), date: new Date().toISOString(), mode: 'interview', qid: 'next-' + Date.now().toString(36), domain: lastIv.domain, title: (lastIv.title || '').replace(/ · 이어서$/, '') + ' · 이어서', num, question: '', messages: [], turn: 0, phase: 'answer', chain: (lastIv.chain || 0) + 1, from: lastIv.id };
     setTalkTools();
     addMsg('sys', `${fmtDate(S.talk.date)} · ${(DOMAINS[lastIv.domain] || { icon: '💬' }).icon} ${S.talk.title}`);
     thinking(true);
@@ -1318,7 +1322,7 @@ async function startTalk(kind, avoid) {
     } catch { thinking(false); MSGS().innerHTML = ''; }
   }
   const q = chooseQuestion(avoid);
-  S.talk = { id: Date.now().toString(36), date: new Date().toISOString(), mode: 'interview', qid: q.id, domain: q.d, title: q.t, num, question: q.q, why: q.why, messages: [], turn: 0, phase: 'answer' };
+  track('talk_start', 'interview'); S.talk = { id: Date.now().toString(36), date: new Date().toISOString(), mode: 'interview', qid: q.id, domain: q.d, title: q.t, num, question: q.q, why: q.why, messages: [], turn: 0, phase: 'answer' };
   setTalkTools();
   addMsg('sys', `${fmtDate(S.talk.date)} · ${DOMAINS[q.d].icon} ${q.t}`);
   // 친구의 작은 실수 이벤트 (3번째, 8번째, 그 뒤 10번마다): 친구에게 건넨 다정한 말을 나중에 돌려준다
@@ -1379,6 +1383,7 @@ async function friendReply() {
 }
 
 async function finishTalk(skipClue) {
+  track('talk_end', S.talk && S.talk.mode);
   const T = S.talk; if (!T) return;
   setComposer(false); S.busy = true;
   const mine = T.messages.filter(m => m.who === 'me').map(m => m.t);
@@ -1535,7 +1540,7 @@ async function aiBook() {
   try {
     const d = S.data;
     const log = `처음 고른 키워드: ${d.profile.traits.join(', ')}\n\n` + d.talks.filter(t => t.done).map(t => `[${fmtDate(t.date)}] ${t.question ? 'Q: ' + t.question : '털어놓기'}\n` + t.messages.filter(m => m.who === 'me').map(m => `A: ${m.t}`).join('\n') + (t.clue ? `\n(본인이 남긴 문장: ${t.clue})` : '')).join('\n\n').slice(-28000);
-    const text = await ask({ mode: 'book', log }, 2);
+    track('book'); const text = await ask({ mode: 'book', log }, 2);
     d.aiProfile = { text: text.replace(/\*\*|##?/g, ''), date: new Date().toISOString() };
     await save(); renderBook(); toast('설명서를 새로 썼어요');
   } catch (e) { toast('잠깐 연결이 안 됐어요. 조금 뒤에 다시 눌러 주세요'); b.disabled = false; b.textContent = '다시 시도'; }
